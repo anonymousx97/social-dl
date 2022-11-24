@@ -4,6 +4,10 @@ from dotenv import load_dotenv
 from pyrogram import Client, filters, idle
 from pyrogram.handlers import MessageHandler
 from pyrogram.types import Message
+from pyrogram.errors import PeerIdInvalid
+import logging
+
+logging.disable(level="NOTSET")
 
 if os.path.isfile("config.env"):
     load_dotenv("config.env")
@@ -23,7 +27,11 @@ handler_ = None
 
 
 async def add_h():
+  try:
     msg = (await bot.get_messages(int(chat_var[0]), int(chat_var[1]))).text
+  except PeerIdInvalid:
+    print("WARNING:\n  Make sure you have entered the\n  message link variable correctly\n  Check readme.md for details\n\nCurrently running on command mode.\n")
+    return
     chat_list.clear()
     chat_list.extend([int(i) for i in msg.split()])
     global handler_
@@ -53,8 +61,11 @@ def boot():
         ),
         group=2,
     )
-    bot.send_message(chat_id=chat_var[0], text="#Instadl\n**Started**")
-    print("started")
+    try:
+      bot.send_message(chat_id=chat_var[0], text="#Instadl\n**Started**")
+    except PeerIdInvalid:
+      pass
+    print("STARTED")
     idle()
 
 
@@ -118,6 +129,9 @@ def dl(bot, message: Message):
                     v = f"{time_}/v.mp4"
                     _opts = {
                         "outtmpl": v,
+                        "logger": logger,
+                        "ignoreerrors": True,
+                        "quite":True,
                         "format": "bv[ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
                     }
                     x = yt_dlp.YoutubeDL(_opts).download(i)
@@ -125,7 +139,7 @@ def dl(bot, message: Message):
                     shutil.rmtree(str(time_))
                 except Exception as e:
                     msg_.edit(f"link not supported or private.")
-                    if not str(e).startswith("Failed to decode"):
+                    if not str(e).startswith("Failed to decode") and len(chat_list)!=0:
                         bot.send_message(chat_id=chat_var[0], text=str(e))
                     del_link = False
     if del_link:
@@ -137,7 +151,6 @@ def dl(bot, message: Message):
 @bot.on_message(filters.command(commands="restart", prefixes=trigger) & filters.user([user_]))
 async def rest(bot, message):
     import sys
-    bot.stop()
     os.execl(sys.executable, sys.executable, "instabot.py")
     sys.exit()
 
