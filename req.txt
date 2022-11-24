@@ -1,0 +1,6 @@
+Pyrogram==2.0.57
+python-dotenv==0.21.0
+TgCrypto==1.2.3
+yt-dlp
+requests
+wget
