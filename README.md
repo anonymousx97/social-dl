@@ -51,7 +51,7 @@
     nano config.env
 
     # Start bot
-    python instadl.py 
+    python instabot.py 
     ```
 
  * If everything is correct you will get <b><i>Started</i></b> stdout in terminal and in your channel.
