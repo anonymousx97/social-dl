@@ -265,7 +265,7 @@ async def json_dl(iurl: str, doc: bool, caption: str):
             print(e)
             return "failed"
         if "require_login" in rjson:
-            print('failed')
+            return "failed"
 
     return_val = "failed"
     if "graphql" in rjson:
