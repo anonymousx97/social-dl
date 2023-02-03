@@ -14,12 +14,13 @@
      <summary> Message_link : </summary>
 
      * Create a private channel on TG.
-     * Send a list of Chat/Channel ids starting with -100 in your log channel like below.  
+     * Send a list of Chat/Channel ids starting with -100 in your log channel like below.
+        Edit this message and add chats you want to add in future.
        <p align="right"><img src="https://telegra.ph/file/394daa80fd53c895cbe6e.jpg"</p>
      * Bot will automatically download links in those chats/channels.
      * Now copy that message's link and you will get something like  
        https://t.me/c/123456789/1
-     * So your value would be -100123456789/1
+     * So your values would be LOG=-100123456789, MESSAGE=1
      </details>
 
    * User : Your user id to control bot.
@@ -60,8 +61,12 @@
  * Send Instagram link in any authorised chat/channel, bot will try to download and send the media.  
  * Owner only commands:
    * `.dl link` to download and send media in any chat.
-   * `.update` to refresh chat list without restarting bot.
-   * `.restart` to restart bot.
+   * `.rdl` to download media from reddit.
+   * `.bot update` to refresh chat list without restarting bot.
+   * `.bot restart` to restart bot.
+   * `.bot ids` to get chat / channel / user IDs.
+   * `.bot join or leave` to join / leave chat using ID.
+   * `.del` to delete message.
    * These commands can be used anywhere and are not limited to authorised chats.
 
 # Known limitations:
