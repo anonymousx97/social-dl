@@ -36,7 +36,7 @@
  * Run the following commands:
     ```bash
     # Install required packages.
-    apt install -y python git python-pip
+    apt install -y python git python-pip ffmpeg
 
     # Clone Repo.
     git clone -q https://github.com/anonymousx97/social-dl
