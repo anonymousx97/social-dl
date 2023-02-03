@@ -36,14 +36,14 @@
  * Run the following commands:
     ```bash
     # Install required packages.
-    apt install -y python git
+    apt install -y python git python-pip
 
     # Clone Repo.
-    git clone -q https://github.com/anonymousx97/instadl
-    cd instadl
+    git clone -q https://github.com/anonymousx97/social-dl
+    cd social-dl
 
     # Install Pypi packages
-    pip install -U pip setuptools wheel
+    pip install -U setuptools wheel
     pip install -r req.txt
 
     #Setup config.env
