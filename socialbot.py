@@ -221,7 +221,7 @@ async def dl(bot, message: Message):
 
 
 async def iyt_dl(url: str):
-    """Stop post url handling because this only downloads Videos and post might contain images"""
+    """Stop handling post url because this only downloads Videos and post might contain images"""
     if url.startswith("https://www.instagram.com/p/"):
         return "failed"
     path_ = time.time()
@@ -256,13 +256,11 @@ async def iyt_dl(url: str):
 
 async def json_dl(iurl: str, doc: bool, caption: str):
     link = iurl.split("/?")[0] + e_json
-    async with aiohttp.ClientSession() as session:
+    async with (aiohttp.ClientSession() as csession, csession.get(link, timeout=10) as session):
         try:
-            async with session.get(link, timeout=10) as session:
-                session_resp = await session.text()
-                rjson = json.loads(session_resp)
-        except Exception as e:
-            print(e)
+            session_resp = await session.text()
+            rjson = json.loads(session_resp)
+        except json.decoder.JSONDecodeError:
             return "failed"
         if "require_login" in rjson:
             return "failed"
