@@ -265,7 +265,7 @@ async def reddit_dl(bot, message: Message):
             return_val = {"path": d_dir, "media": downloads}
 
         else:
-            media_ = json_["url_overridden_by_dest"].strip()
+            media_ = json_get("url_overridden_by_dest","").strip()
             if media_.endswith((".jpg", ".jpeg", ".png", ".webp")):
                 img = download(media_, d_dir)
                 return_val = {"path": d_dir, "type": "img", "media": img, "thumb": None, "caption": caption}
