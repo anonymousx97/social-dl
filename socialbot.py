@@ -288,7 +288,7 @@ async def async_download(urls: list, path: str, doc: bool = False, caption: str 
     if doc:
         return down_loads
     [os.rename(file, file + ".png") for file in glob.glob(f"{path}/*.webp")]
-    files = glob.glob(f"{path}/*")
+    files = [ i + ".png" if i.endswith(".webp") else i for i in down_loads ]
     grouped_images = [InputMediaPhoto(img, caption=caption) for img in files if img.endswith((".png", ".jpg", ".jpeg"))]
     grouped_videos = [InputMediaVideo(vid, caption=caption) for vid in files if vid.endswith((".mp4", ".mkv", ".webm"))]
     return_list = [grouped_images[imgs : imgs + 5] for imgs in range(0, len(grouped_images), 5)] + [
