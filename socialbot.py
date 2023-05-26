@@ -76,7 +76,7 @@ TRIGGER = os.environ.get("TRIGGER")
 
 # Gallery-dl for all types of media
 
-async def gallery_dl(url, caption,doc):
+async def gallery_dl(url:str, caption:str, ,doc:bool=false):
     download_dir = f"downloads/{time.time()}"
     await run_shell_cmd(f"gallery-dl -q -D {download_dir} '{url}'")
     files = glob.glob(f"{download_dir}/*")
@@ -145,7 +145,7 @@ async def yt_dl(url: str, caption: str, doc:bool=False):
         _opts.update({"format": "bv[ext=mp4]+ba[ext=m4a]/b[ext=mp4]"})
     data = "failed"
     try:
-        yt_dlp.YoutubeDL(_opts).download(url)
+        await asyncio.to_thread(yt_dlp.YoutubeDL(_opts).download, url)
         if os.path.isfile(video):
             data = {
                 "path": path,
