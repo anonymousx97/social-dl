@@ -5,3 +5,4 @@ python-dotenv==0.21.0
 tgCrypto==1.2.3
 wget
 yt-dlp
+gallery-dl

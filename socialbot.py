@@ -71,7 +71,123 @@ USERS = json.loads(os.environ.get("USERS"))
 
 TRIGGER = os.environ.get("TRIGGER")
 
-E_JSON = base64.b64decode("Lz9fX2E9MSZfX2Q9MQ==").decode("utf-8")
+
+# Download Section
+
+# Gallery-dl for all types of media
+
+async def gallery_dl(url, caption,doc):
+    download_dir = f"downloads/{time.time()}"
+    await run_shell_cmd(f"gallery-dl -q -D {download_dir} '{url}'")
+    files = glob.glob(f"{download_dir}/*")
+    if not files:
+        return "failed"
+    ret_dict = {"path": download_dir, "caption": caption}
+    if doc:
+        ret_dict['media']=files
+
+    # If more than 1 file return grouped media
+    elif len(files) > 1:
+        grouped_images, grouped_videos, animations = [], [], []
+        for file in files:
+            if file.endswith((".png", ".jpg", ".jpeg",".webp")):
+                if file.endswith(".webp"):
+                    os.rename(file,file+".png")
+                    file = file+ ".png"
+                grouped_images.append(InputMediaPhoto(file, caption=caption))
+            elif file.endswith((".mp4", ".mkv", ".webm")):
+                has_audio = await check_audio(file)
+                if not has_audio:
+                    animations.append(file)
+                else:
+                    grouped_videos.append(InputMediaVideo(file, caption=caption))
+
+        # Limit 5 posts per list to avoid TG's flood system
+        group_list = [
+        grouped_images[imgs : imgs + 5] for imgs in range(0, len(grouped_images), 5)
+        ] + [grouped_videos[vids : vids + 5] for vids in range(0, len(grouped_videos), 5)
+        ] + animations
+
+        # Final output of group_list = [ [1,2,3,4,5], [6,7,8,9,10] ]
+
+        ret_dict.update({"is_grouped": True,"media": group_list})
+
+    # Otherwise return single after renaming to proper extension coz TG converts webp to sticker
+    else:
+        file = files[0]
+        ret_dict['media'] = file
+        if file.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+            ret_dict["is_image"] = True
+            if file.lower().endswith(".webp"):
+                os.rename(file, file + ".jpg")
+                ret_dict.update({"media": down_load + ".jpg"})
+        elif file.lower().endswith((".mkv", ".mp4", ".webm")):
+            ret_dict.update({"is_video": True, "thumb": await take_ss(video=file, path=download_dir)})
+        elif file.lower().endswith(".gif"):
+            ret_dict.update({"is_animation": True})
+    return ret_dict
+
+
+# YT-DLP for videos from multiple sites
+async def yt_dl(url: str, caption: str, doc:bool=False):
+    path = "downloads/" + str(time.time())
+    video = f"{path}/v.mp4"
+    _opts = {
+        "outtmpl": video,
+        "ignoreerrors": True,
+        "ignore_no_formats_error": True,
+        "quiet": True,
+        "logger": FakeLogger(),
+    }
+    if "shorts" in url:
+        _opts.update({"format": "bv[ext=mp4][res=480]+ba[ext=m4a]/b[ext=mp4]"})
+    else:
+        _opts.update({"format": "bv[ext=mp4]+ba[ext=m4a]/b[ext=mp4]"})
+    data = "failed"
+    try:
+        yt_dlp.YoutubeDL(_opts).download(url)
+        if os.path.isfile(video):
+            data = {
+                "path": path,
+                "is_video": True,
+                "media": video,
+                "thumb": await take_ss(video=video, path=path),
+                "caption": caption,
+            }
+    except BaseException:
+        pass
+    return data
+
+
+# To disable YT-DLP logging
+class FakeLogger(object):
+    def debug(self, msg):
+        pass
+
+    def warning(self, msg):
+        pass
+
+    def error(self, msg):
+        pass
+
+
+
+# Thumbnail
+async def take_ss(video: str, path: str):
+    await run_shell_cmd(f'''ffmpeg -hide_banner -loglevel error -ss 0.1 -i "{video}" -vframes 1 "{path}/i.png"''')
+    if os.path.isfile(path + "/i.png"):
+        return path + "/i.png"
+
+# Check if it's a video or gif
+async def check_audio(file):
+    result = await run_shell_cmd(f"ffprobe -v error -show_entries format=nb_streams -of default=noprint_wrappers=1:nokey=1 {file}")
+    return int(result.get("stdout", 0)) - 1
+
+
+async def run_shell_cmd(cmd):
+    proc = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+    stdout, stderr = await proc.communicate()
+    return {"stdout": stdout.decode("utf-8"), "stderr": stderr.decode("utf-8")}
 
 
 # BOT Section
@@ -109,10 +225,10 @@ class MESSAGE_PARSER:
     def match_links(self):
         url_map = {
             "tiktok.com": yt_dl,
-            "www.instagram.com": instagram_dl,
+            "www.instagram.com": gallery_dl,
             "youtube.com/shorts": yt_dl,
-            "twitter.com": yt_dl,
-            "www.reddit.com": reddit_dl,
+            "twitter.com": gallery_dl,
+            "www.reddit.com": gallery_dl,
         }
         for link in self.text_list:
             if (match := url_map.get(url_p(link).netloc)):
@@ -310,15 +426,7 @@ async def add_h():
         print("\nThe message id is wrong. \nOr \nChat id message contains letters\nonly numerical ids are allowed.\n")
         return 1
     social_handler = bot.add_handler(
-        MessageHandler(
-            dl,
-            (
-                (filters.regex(r"^http*"))
-                & filters.chat(chats_list)
-            ),
-        ),
-        group=1,
-    )
+        MessageHandler(dl,(filters.regex(r"^http*")& filters.chat(chats_list))),group=1)
     globals().update({"HANDLER_":social_handler})
 
 
@@ -335,319 +443,7 @@ async def boot():
     await idle()
 
 
-
-# API Section
-
-
-# Instagram
-async def instagram_dl(url: str, caption: str, doc: bool = False):
-    args = locals()
-    # status = await instafix(message=message, link=i, caption=caption)
-    for i in [yt_dl, api_2]:
-        data = await i(**args)
-        if isinstance(data, dict):
-            break
-    return data
-
-
-async def api_2(url: str, caption: str, doc: bool):
-    link = url.split("/?")[0] + E_JSON
-    response = await get_json(url=link)
-    if not response or "graphql" not in response:
-        return "failed"
-    return await parse_ghraphql(
-        response["graphql"]["shortcode_media"], caption=caption + "\n.."
-    )
-
-
-async def parse_ghraphql(json_: dict, caption: str, doc: bool = False):
-    try:
-        path = f"downloads/{time.time()}"
-        os.makedirs(path)
-        ret_dict = {"path": path, "thumb": None, "caption": caption}
-        type_check = json_.get("__typename",None)
-        if not type_check:
-            return "failed"
-        elif type_check == "GraphSidecar":
-            media = []
-            for i in json_["edge_sidecar_to_children"]["edges"]:
-                if i["node"]["__typename"] == "GraphImage":
-                    media.append(i["node"]["display_url"])
-                if i["node"]["__typename"] == "GraphVideo":
-                    media.append(i["node"]["video_url"])
-            ret_dict.update({"is_grouped": False if doc else True, "media": await async_download(urls=media, path=path, doc=doc, caption=caption)})
-        else:
-            media = json_.get("video_url") or json_.get("display_url")
-            ret_dict.update(**await get_media(url=media, path=path))
-    except Exception:
-        await bot.send_message(chat_id=LOG_CHAT, text=str(traceback.format_exc()))
-    return ret_dict
-
-
-# YT-DLP for videos from multiple sites
-async def yt_dl(url: str, caption: str, doc:bool=False):
-    if "instagram.com/p/" in url:
-        return
-    path = str(time.time())
-    video = f"{path}/v.mp4"
-    _opts = {
-        "outtmpl": video,
-        "ignoreerrors": True,
-        "ignore_no_formats_error": True,
-        "quiet": True,
-        "logger": FakeLogger(),
-    }
-    if "shorts" in url:
-        _opts.update({"format": "bv[ext=mp4][res=480]+ba[ext=m4a]/b[ext=mp4]"})
-    else:
-        _opts.update({"format": "bv[ext=mp4]+ba[ext=m4a]/b[ext=mp4]"})
-    data = "failed"
-    try:
-        yt_dlp.YoutubeDL(_opts).download(url)
-        if os.path.isfile(video):
-            data = {
-                "path": path,
-                "is_video": True,
-                "media": video,
-                "thumb": await take_ss(video=video, path=path),
-                "caption": caption,
-            }
-    except BaseException:
-        pass
-    return data
-
-
-# To disable YT-DLP logging
-class FakeLogger(object):
-    def debug(self, msg):
-        pass
-
-    def warning(self, msg):
-        pass
-
-    def error(self, msg):
-        pass
-
-
-# Reddit
-async def reddit_dl(url: str, caption: str, doc: bool = False):
-    link = url.split("/?")[0] + ".json?limit=1"
-    headers = {
-        "user-agent": "Mozilla/5.0 (Macintosh; PPC Mac OS X 10_8_7 rv:5.0; en-US) AppleWebKit/533.31.5 (KHTML, like Gecko) Version/4.0 Safari/533.31.5"
-    }
-    try:
-        response = await get_json(url=link, headers=headers, json_=True)
-        if not response:
-            return "failed"
-        json_ = response[0]["data"]["children"][0]["data"]
-        caption = f'__{json_["subreddit_name_prefixed"]}:__\n**{json_["title"]}**\n\n' + caption
-        path = str(time.time())
-        os.mkdir(path)
-        is_vid, is_gallery = json_.get("is_video"), json_.get("is_gallery")
-        data = {"path": path, "caption": caption}
-        if is_vid:
-            video = f"{path}/v.mp4"
-            vid_url = json_["secure_media"]["reddit_video"]["hls_url"]
-            await run_shell_cmd(f'ffmpeg -hide_banner -loglevel error -i "{vid_url.strip()}" -c copy {video}')
-            data.update({"is_video": True, "media": video, "thumb": await take_ss(video=video, path=path)})
-
-        elif is_gallery:
-            grouped_media_urls = [json_["media_metadata"][val]["s"]["u"].replace("preview", "i") for val in json_["media_metadata"]]
-            downloads = await async_download(urls=grouped_media_urls, path=path, doc=doc, caption=caption)
-            data.update({"is_grouped": True, "media": downloads})
-
-        else:
-            url_ = json_.get("preview", {}).get("reddit_video_preview", {}).get("fallback_url", "") or json_.get("url_overridden_by_dest", "").strip()
-            if not url_:
-                return "failed"
-            data.update(await get_media(url=url_, path=path))
-
-    except Exception:
-        await bot.send_message(chat_id=LOG_CHAT, text=str(traceback.format_exc()))
-    return data
-
-
-# Get Json response from APIs
-async def get_json(url: str, headers: dict = None, params: dict = None, retry: bool = False, json_: bool = False, timeout: int = 10):
-    if retry:
-        client = RETRY_CLIENT
-    else:
-        client = SESSION
-    try:
-        async with client.get(url=url, headers=headers, params=params, timeout=timeout) as ses:
-            if json_:
-                ret_json = await ses.json()
-            else:
-                ret_json = json.loads(await ses.text())
-    except (json.decoder.JSONDecodeError, aiohttp.ContentTypeError, asyncio.TimeoutError):
-        return
-    except Exception:
-        await bot.send_message(chat_id=LOG_CHAT, text=str(traceback.format_exc()))
-        return
-    return ret_json
-
-
-# Download media and return it with media type
-async def get_media(url: str, path: str):
-    down_load = download(url, path)
-    ret_dict = {"media": down_load}
-    if down_load.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
-        ret_dict["is_image"] = True
-        if down_load.lower().endswith(".webp"):
-            os.rename(down_load, down_load + ".jpg")
-            ret_dict.update({"media": down_load + ".jpg"})
-    elif down_load.lower().endswith((".mkv", ".mp4", ".webm")):
-        ret_dict.update({"is_video": True, "thumb": await take_ss(video=down_load, path=path)})
-    elif down_load.lower().endswith(".gif"):
-        ret_dict.update({"is_animation": True})
-    else:
-        return {}
-    return ret_dict
-
-
-# Download multiple media asynchronously to save time;
-# Return it in a list or a list with smaller lists each containing upto 5 media.
-async def async_download(urls: list, path: str, doc: bool = False, caption: str = ""):
-    down_loads = await asyncio.gather(*[asyncio.to_thread(download, url, path) for url in urls])
-    if doc:
-        return down_loads
-    [os.rename(file, file + ".png") for file in glob.glob(f"{path}/*.webp")]
-    files = [i + ".png" if i.endswith(".webp") else i for i in down_loads]
-    grouped_images, grouped_videos, animations = [], [], []
-    for file in files:
-        if file.endswith((".png", ".jpg", ".jpeg")):
-            grouped_images.append(InputMediaPhoto(file, caption=caption))
-        if file.endswith((".mp4", ".mkv", ".webm")):
-            has_audio = await check_audio(file)
-            if not has_audio:
-                animations.append(file)
-            else:
-                grouped_videos.append(InputMediaVideo(file, caption=caption))
-    return_list = [
-        grouped_images[imgs : imgs + 5] for imgs in range(0, len(grouped_images), 5)
-    ] + [grouped_videos[vids : vids + 5] for vids in range(0, len(grouped_videos), 5)
-    ] + animations
-    return return_list
-
-
-# Thumbnail
-async def take_ss(video: str, path: str):
-    await run_shell_cmd(f'''ffmpeg -hide_banner -loglevel error -ss 0.1 -i "{video}" -vframes 1 "{path}/i.png"''')
-    if os.path.isfile(path + "/i.png"):
-        return path + "/i.png"
-
-
-async def check_audio(file):
-    result = await run_shell_cmd(f"ffprobe -v error -show_entries format=nb_streams -of default=noprint_wrappers=1:nokey=1 {file}")
-    return int(result.get("stdout", 0)) - 1
-
-
-async def run_shell_cmd(cmd):
-    proc = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-    stdout, stderr = await proc.communicate()
-    return {"stdout": stdout.decode("utf-8"), "stderr": stderr.decode("utf-8")}
-
-
 # Start only bot when file is called directly.
 if __name__ == "__main__":
     bot.start()
     bot.run(boot())
-
-
-
-# NOT FOR PUBLIC
-
-#API_KEYS = {
-#    "abc": {
-#        "keys": [],
-#        "counter": 0,
-#        "exhausted": {},
-#    },
-#}
-#SWITCH = [0]
-
-
-# Rotating Key function to avoid hitting limit on single Key
-#async def get_key(func_tion):
-#    func = API_KEYS.get(func_tion, {})
-#    key = func.get("keys")
-#    count = func.get("counter")
-#    count += 1
-#    if count == len(key):
-#        count = 0
-#    ret_key = key[count]
-#    API_KEYS[func_tion]["counter"] = count
-#    return ret_key
-
-
-# Tiktok
-#async def tik_dl(url: str, doc: bool, caption:str):
-#    status = "failed"
-#    headers = {
-#        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
-#    }
-#    url_ = f""
-#    response = await get_json(url_, headers=headers, json_=True)
-#    if not response or "status" in response and response["status"] == "failed":
-#        return "failed"
-#    if "video_data" in response:
-#        data = response["video_data"]["nwm_video_url_HQ"]
-#        status = {"path": "", "is_video": True, "media": data, "thumb": None, "caption": ""}
-#    if "image_data" in response:
-#        data = response["image_data"]["no_watermark_image_list"]
-#        path = f"downloads/{time.time()}"
-#        os.makedirs(path)
-#        downloads = await async_download(urls=data, path=path, doc=doc, caption=caption)
-#        status = {"path": path, "media": downloads, "caption": "", "is_grouped": True}
-#    return status
-
-
-#async def multi_api(url: str, caption: str, doc: bool = False):
-#    apis = [
-#        {
-#            "url": "",
-#            "headers": {},
-#            "querystring": {},
-#        },
-#    ]
-
-#    switch_ = SWITCH[0] + 1
-#    if switch_ == len(apis):
-#        switch_ = 0
-#    SWITCH[0] = switch_
-#
-#    api = apis[switch_]
-#    api["headers"]["API-Key"] = await get_key(f"multi_api{switch_}")
-#    response = await get_json(url=api.get("url"), headers=api.get("headers"), params=api.get("querystring"), json_=True)
-#    if not response or "message" in response:
-#        return "failed"
-#    data = response.get("data", {}).get("shortcode_media", {}) or response
-#    return await parse_ghraphql(json_=data, caption=caption + "\n" + "•" * switch_, doc=doc)
-
-
-#async def api_1(url: str, caption: str, doc: bool = False):
-#    url = ""
-#    querystring = {"url": url}
-#    data = "failed"
-#    headers = {
-#        "API-Key": await get_key("api_1"),
-#        "API-Host": "",
-#    }
-#    response = await get_json(url=url, headers=headers, params=querystring)
-#    print(response)
-#    if not response or "message" in response or "messages" in response:
-#        return "failed"
-#    media = response["media"]
-#    path = f"downloads/{time.time()}"
-#    os.makedirs(path)
-#    if isinstance(media, list):
-#        downloads = await async_download(urls=media, path=path, doc=doc, caption=caption + "\n.")
-#        data = {"path": path, "media": downloads, "is_grouped": True}
-#    else:
-#        data = {
-#            "path": path,
-#            "caption": caption + "\n.",
-#            **await get_media(url=media.split("&filename")[0], path=path),
-#        }
-#    return data
-
