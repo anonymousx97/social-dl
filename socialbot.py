@@ -44,7 +44,7 @@ from aiohttp_retry import ExponentialRetry, RetryClient
 from dotenv import load_dotenv
 from pyrogram import Client, filters, idle
 from pyrogram.enums import ChatType, ParseMode
-from pyrogram.errors import MediaEmpty, PhotoSaveFileInvalid, WebpageCurlFailed
+from pyrogram.errors import MediaEmpty, PeerIdInvalid, PhotoSaveFileInvalid, WebpageCurlFailed
 from pyrogram.handlers import MessageHandler
 from pyrogram.types import InputMediaPhoto, InputMediaVideo, Message
 from wget import download
