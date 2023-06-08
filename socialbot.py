@@ -61,7 +61,7 @@ bot = Client(
     parse_mode=ParseMode.DEFAULT,
 )
 
-LOG_CHAT = os.environ.get("LOG")
+LOG_CHAT = os.environ.get("LOG_CHANNEL")
 
 if LOG_CHAT is None:
     print("Enter log channel id in config")
@@ -552,102 +552,3 @@ async def run_shell_cmd(cmd):
 if __name__ == "__main__":
     bot.start()
     bot.run(boot())
-
-
-
-# NOT FOR PUBLIC
-
-#API_KEYS = {
-#    "abc": {
-#        "keys": [],
-#        "counter": 0,
-#        "exhausted": {},
-#    },
-#}
-#SWITCH = [0]
-
-
-# Rotating Key function to avoid hitting limit on single Key
-#async def get_key(func_tion):
-#    func = API_KEYS.get(func_tion, {})
-#    key = func.get("keys")
-#    count = func.get("counter")
-#    count += 1
-#    if count == len(key):
-#        count = 0
-#    ret_key = key[count]
-#    API_KEYS[func_tion]["counter"] = count
-#    return ret_key
-
-
-# Tiktok
-#async def tik_dl(url: str, doc: bool, caption:str):
-#    status = "failed"
-#    headers = {
-#        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
-#    }
-#    url_ = f""
-#    response = await get_json(url_, headers=headers, json_=True)
-#    if not response or "status" in response and response["status"] == "failed":
-#        return "failed"
-#    if "video_data" in response:
-#        data = response["video_data"]["nwm_video_url_HQ"]
-#        status = {"path": "", "is_video": True, "media": data, "thumb": None, "caption": ""}
-#    if "image_data" in response:
-#        data = response["image_data"]["no_watermark_image_list"]
-#        path = f"downloads/{time.time()}"
-#        os.makedirs(path)
-#        downloads = await async_download(urls=data, path=path, doc=doc, caption=caption)
-#        status = {"path": path, "media": downloads, "caption": "", "is_grouped": True}
-#    return status
-
-
-#async def multi_api(url: str, caption: str, doc: bool = False):
-#    apis = [
-#        {
-#            "url": "",
-#            "headers": {},
-#            "querystring": {},
-#        },
-#    ]
-
-#    switch_ = SWITCH[0] + 1
-#    if switch_ == len(apis):
-#        switch_ = 0
-#    SWITCH[0] = switch_
-#
-#    api = apis[switch_]
-#    api["headers"]["API-Key"] = await get_key(f"multi_api{switch_}")
-#    response = await get_json(url=api.get("url"), headers=api.get("headers"), params=api.get("querystring"), json_=True)
-#    if not response or "message" in response:
-#        return "failed"
-#    data = response.get("data", {}).get("shortcode_media", {}) or response
-#    return await parse_ghraphql(json_=data, caption=caption + "\n" + "•" * switch_, doc=doc)
-
-
-#async def api_1(url: str, caption: str, doc: bool = False):
-#    url = ""
-#    querystring = {"url": url}
-#    data = "failed"
-#    headers = {
-#        "API-Key": await get_key("api_1"),
-#        "API-Host": "",
-#    }
-#    response = await get_json(url=url, headers=headers, params=querystring)
-#    print(response)
-#    if not response or "message" in response or "messages" in response:
-#        return "failed"
-#    media = response["media"]
-#    path = f"downloads/{time.time()}"
-#    os.makedirs(path)
-#    if isinstance(media, list):
-#        downloads = await async_download(urls=media, path=path, doc=doc, caption=caption + "\n.")
-#        data = {"path": path, "media": downloads, "is_grouped": True}
-#    else:
-#        data = {
-#            "path": path,
-#            "caption": caption + "\n.",
-#            **await get_media(url=media.split("&filename")[0], path=path),
-#        }
-#    return data
-
