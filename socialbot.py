@@ -61,7 +61,7 @@ bot = Client(
     parse_mode=ParseMode.DEFAULT,
 )
 
-LOG_CHAT = os.environ.get("LOG")
+LOG_CHAT = os.environ.get("LOG_CHANNEL")
 
 if LOG_CHAT is None:
     print("Enter log channel id in config")
