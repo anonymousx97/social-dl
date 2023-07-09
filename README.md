@@ -1,37 +1,21 @@
-# Light weight Social Media downloader bot.
-  * Supported Platforms:
-    * Videos: Instagram, Tiktok, Twitter, YouTube Shorts
-    * Images: Instagram, Reddit
-    * Gif : Reddit
+# Social Media downloader bot.
+> Formerly "Lightweight Bot" XD
 
-## Usage and Commands:
-  * Send supported links in any authorised chat/channel.   
-  Bot will try to download and send the media.  
+![Header Image](https://github.com/anonymousx97/social-dl/blob/main/assets/social_downloader.png?raw=true)
 
-  * Owner only commands:
-  * `.dl link` to download and send media in any chat.
-  * `.bot update` to refresh chat list without restarting bot.
-  * `.bot restart` to restart bot.
-  * `.bot ids` to get chat / channel / user IDs.
-  * `.bot join or leave` to join / leave chat using ID.
-  * `.del` reply to a message to delete. 
-  * `.purge` to delete all messages between command and replied message.
+<b>A Telegram User-Bot to Download Media from various websites and send in chat.</b>
 
-  These commands can be used anywhere.  
+### Supported Platforms:
+  - Facebook
+  - Instagram
+  - Reddit
+  - Threads.net
+  - Tiktok
+  - Twitter
+  - YouTube 
 
-  * Developer Mode Commands:
-    * `.sh` to run shell commands.  
 
-        Example: `.sh ls`  
-
-    * `.exec` to run python code.  
-
-        Example: `.exec print(1)` 
-
-    These commands are dangerous and are disabled by default.
-    Add `DEV_MODE="yes"` in config to enable these.
-
-## For android local deploy:
+### For android local deploy:
   * Download Latest [Termux](https://github.com/termux/termux-app/releases).
      ```bash
      # Change Default repository of termux.
@@ -41,10 +25,10 @@
      yes|apt update && yes|apt upgrade
      ```
 
-## Installation:
+### Installation:
   ```bash
   # Install required packages.
-  apt install -y python git python-pip ffmpeg
+  apt install -y python3 git curl python-pip ffmpeg
 
    # Clone Repo.
   git clone -q https://github.com/anonymousx97/social-dl
@@ -60,52 +44,78 @@
   nano config.env
   ```
 
-## Config:
+### Config:
    * Get API_ID and API_HASH from https://my.telegram.org/auth .
    * Generate String Session by running this in Termux: 
      ```bash 
      bash -c "$(curl -fsSL https://raw.githubusercontent.com/ux-termux/string/main/Termux.sh)" 
      ```
-     * It will ask you to choose pyrogram version. Select 2.
+     > It will ask you to choose pyrogram version. Select 2.
 
-   * <details> 
-     <summary> Message_link : </summary>
+   * LOG_CHAT: Create A Log Channel and add it's id along with -100 at the beginning.
+   * API_KEYS: Optional Instagram scrapping keys from <a href=https://webscraping.ai/>API. </a> recommended to add if you wanna reduce Instagram dl failures.
+     
+   * <details>
+     <summary>Tap here for The Message IDs : </summary>
+      Send 2 messages in your log channel, message text is an empty list : []
 
-     * Create a private channel on TG.
-     * Send a list of Chat/Channel ids starting with -100 in your log channel like below.
-        Edit this message and add chats you want to add in future.
-       <p align="right"><img src="https://telegra.ph/file/394daa80fd53c895cbe6e.jpg"</p>
-     * Bot will automatically download links in those chats/channels.
-     * Now copy that message's link and you will get something like  
-       https://t.me/c/123456789/1
-     * So your values would be LOG=-100123456789 MESSAGE=1
+     * Copy the links of those messages.
+     
+     * The last digits of these links are the message ids.
+     
+     * These two are your AUTO_DL_MESSAGE_ID and BLOCKED_USERS_MESSAGE_ID DB.
+     * Add their IDs in config respectively.
+
+
+     Now send another message but this time include your id in the list: [12345678]
+     
+     * Copy this message's link and add the message id in USERS_MESSAGE_ID var
      </details>
-
-   * User : Your user id to control bot.
    * Trigger : Trigger to access bot.
+   * Dev Mode: Set to 1 if you want access to exec, sh, shell commands.
+     > These commands can Dangerous if used carelessly, Turn on at your own risk.
+     > if set to 1 both you and sudo users can use these commands.
 
-
-## Start bot
+### Start bot
   ```bash
-  python socialbot.py 
+  cd social-dl && python3 -m app
   ```
 
   * If everything is correct you will get <b><i>Started</i></b> stdout in terminal and in your channel.
+  * Use `.help` to get list of commands in bot.
 
-## Setup a quick run command for bot.
-  ```bash
-  echo "alias runbot='cd social-dl && python socialbot.py'" >> ~/.bashrc && bash
-  ``` 
-
-  Now you can run bot with `runbot`
-
-## Known limitations:
+### Known Instagram limitations:
   * If deployed on a VPS or any server Instragram might block access to some content.  
   After hitting Instagram's rate limit image download might not work because servers and vps usually have static IP and Instagram would block access.
   * Deploying it locally would solve all of those issues because most of us are likely to have dynamic IP.  
-  Bot is made lightweight with local deploys in mind. But battery life will take some hit anyway.
-  * Logging in with your Instagram which would solve the rate-limit issues is not added and won't be added because 2 of my accounts were suspended till manual verification for using scrapping bots like these.  
+  Bot <s>is</s> was made lightweight with local deploys in mind. But battery life will definitely take a hit.
+  * Logging in with your Instagram which would solve the rate-limit issues is not added and won't be added because 2 of my accounts were suspended till manual verification for using scrapping bots like these.
 
 ## Contact
- * For any questions related to deploy or issues contact me on  
+ * For any issues or questions related to deploy contact me on  
  [Telegram](https://t.me/anonymousx97)
+
+# Special Thanks:
+ - [Dan](https://github.com/delivrance) for [Pyrogram](https://github.com/pyrogram/pyrogram)
+ - All Libraries used in the project.
+   
+ - [Kakashi](https://github.com/AshwinStr) for the Banner and helping with coding concepts.
+   
+ - [Userge-X](https://github.com/code-rgb/USERGE-X) and [UX-Jutsu](https://github.com/ashwinstr/ux-jutsu) for basic userbot concepts.
+  
+ - [NotShroud](https://t.me/NotShroudX97) for getting me into userbot stuff.
+   
+ - [Alicia Dark](https://github.com/Thegreatfoxxgoddess) for Social-DL Idea and inspiring / pushing me to explore modding TG bots.
+   
+ - [IsthisUser](https://github.com/dishapatel010) for helping with Instagram and threads support.
+ 
+ - [Fnix](https://github.com/fnixdev), [Lucky Jain](https://github.com/lostb053), [Jeel Patel](https://t.me/jeelpatel231) for teaching/helping with code stuff and suggesting improvements.
+ - [Avinash Reddit](https://t.me/AvinashReddy3108) for suggesting the use of [Gallery-DL](https://github.com/mikf/gallery-dl)
+
+
+# Disclaimer:
+Social-DL provides a way for users to download and upload media. While I facilitate these actions, it is important to note that the content accessed, downloaded, or uploaded through the bot is entirely the responsibility of the users. I do not distribute or endorse any specific media content.
+
+Users are solely responsible for the types of media they download or upload using the Bot. They should ensure that they have the legal right to access or share the media files in question and comply with all applicable copyright laws and regulations. I do not monitor or control the nature, legality, or appropriateness of the content exchanged through the Bot.
+
+It is essential for users to exercise caution and use our service in accordance with the terms of service and relevant laws. Any activities performed by users utilizing the Bot are done at their own risk. I recommend users to respect intellectual property rights, adhere to copyright laws, and obtain proper permissions when necessary.

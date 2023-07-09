@@ -1,7 +1,10 @@
-aiohttp
-aiohttp_retry
-pyrogram==2.0.57
+aiohttp>=3.8.4
+beautifulsoup4>=4.12.2
+Brotli>=1.0.9
+gallery_dl>=1.25.7
+pyrogram>=2.0.106
 python-dotenv==0.21.0
-tgCrypto==1.2.3
-wget
-yt-dlp
+PyExecJS>=1.5.1
+tenacity>=8.2.2
+tgCrypto>=1.2.3
+yt-dlp>=2023.6.22
