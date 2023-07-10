@@ -1,5 +1,5 @@
 # Social Media downloader bot.
-> Formerly "Lightweight Bot" XD
+> Formerly "Lightweight" XD
 
 ![Header Image](https://github.com/anonymousx97/social-dl/blob/main/assets/social_downloader.png?raw=true)
 
@@ -73,7 +73,7 @@
      </details>
    * Trigger : Trigger to access bot.
    * Dev Mode: Set to 1 if you want access to exec, sh, shell commands.
-     > These commands can Dangerous if used carelessly, Turn on at your own risk.
+     > These commands can be dangerous if used carelessly, Turn on at your own risk.
      > if set to 1 both you and sudo users can use these commands.
 
 ### Start bot
@@ -88,7 +88,7 @@
   * If deployed on a VPS or any server Instragram might block access to some content.  
   After hitting Instagram's rate limit image download might not work because servers and vps usually have static IP and Instagram would block access.
   * Deploying it locally would solve all of those issues because most of us are likely to have dynamic IP.  
-  Bot <s>is</s> was made lightweight with local deploys in mind. But battery life will definitely take a hit.
+  * Bot <s>is</s> was made lightweight with local deploys in mind. So battery life will definitely take a hit.
   * Logging in with your Instagram which would solve the rate-limit issues is not added and won't be added because 2 of my accounts were suspended till manual verification for using scrapping bots like these.
 
 ## Contact
@@ -110,7 +110,7 @@
  - [IsthisUser](https://github.com/dishapatel010) for helping with Instagram and threads support.
  
  - [Fnix](https://github.com/fnixdev), [Lucky Jain](https://github.com/lostb053), [Jeel Patel](https://t.me/jeelpatel231) for teaching/helping with code stuff and suggesting improvements.
- - [Avinash Reddit](https://t.me/AvinashReddy3108) for suggesting the use of [Gallery-DL](https://github.com/mikf/gallery-dl)
+ - [Avinash Reddy](https://t.me/AvinashReddy3108) for suggesting the use of [Gallery-DL](https://github.com/mikf/gallery-dl)
 
 
 # Disclaimer:
