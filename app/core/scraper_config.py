@@ -15,7 +15,7 @@ class ScraperConfig:
         self.gif = False
 
     def set_sauce(self, url):
-        self.caption_url = f"\n\n<a href={url}>Sauce</a>"
+        self.caption_url = f"\n\n<a href='{url}'>Sauce</a>"
 
     @classmethod
     async def start(cls, url):

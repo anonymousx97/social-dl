@@ -4,9 +4,6 @@ import os
 import traceback
 from urllib.parse import urlparse
 
-from pyrogram.errors import MediaEmpty, PhotoSaveFileInvalid, WebpageCurlFailed
-from pyrogram.types import InputMediaPhoto, InputMediaVideo
-
 from app.api.gallerydl import Gallery_DL
 from app.api.instagram import Instagram
 from app.api.reddit import Reddit
@@ -14,9 +11,10 @@ from app.api.threads import Threads
 from app.api.tiktok import Tiktok
 from app.api.ytdl import YT_DL
 from app.core import aiohttp_tools, shell
+from pyrogram.errors import MediaEmpty, PhotoSaveFileInvalid, WebpageCurlFailed
+from pyrogram.types import InputMediaPhoto, InputMediaVideo
 
 # Thanks Jeel Patel for the concept TG[@jeelpatel231]
-
 url_map = {
     "tiktok.com": Tiktok,
     "www.instagram.com": Instagram,
@@ -33,11 +31,15 @@ url_map = {
 class ExtractAndSendMedia:
     def __init__(self, message):
         self.exceptions, self.media_objects = [], []
+        self.__client = message._client
         self.message = message
         self.doc = "-d" in message.flags
         self.spoiler = "-s" in message.flags
         self.sender = "" if "-ns" in message.flags else f"\nShared by : {self.extract_sender()}"
-        self.args_ = {"chat_id": self.message.chat.id, "reply_to_message_id": message.reply_id}
+        self.args_ = {
+            "chat_id": self.message.chat.id,
+            "reply_to_message_id": message.reply_id,
+        }
 
     def extract_sender(self):
         author = self.message.author_signature
@@ -68,41 +70,41 @@ class ExtractAndSendMedia:
                 elif obj.group:
                     await self.send_group(obj, caption=caption)
                 elif obj.photo:
-                    await self.send_photo(obj.link, caption=caption)
+                    await self.send(
+                        media={"photo":obj.link},
+                        method=self.__client.send_photo,
+                        caption=caption,
+                        has_spoiler=self.spoiler,
+                    )
                 elif obj.video:
-                    await self.send_video(obj.link, thumb=obj.thumb, caption=caption)
+                    await self.send(
+                        media={"video":obj.link},
+                        method=self.__client.send_video,
+                        thumb=await aiohttp_tools.thumb_dl(obj.thumb),
+                        caption=caption,
+                        has_spoiler=self.spoiler,
+                    )
                 elif obj.gif:
-                    await self.send_animation(obj.link, caption=caption)
+                    await self.send(
+                        media={"animation":obj.link},
+                        method=self.__client.send_animation,
+                        caption=caption,
+                        has_spoiler=self.spoiler,
+                        unsave=True,
+                    )
             except BaseException:
-                self.exceptions.append(traceback.format_exc())
+                self.exceptions.append("\n".join([obj.caption_url.strip(), traceback.format_exc()]))
 
-    async def send_photo(self, photo, caption):
+    async def send(self, media, method, **kwargs):
         try:
             try:
-                await self.message._client.send_photo(**self.args_, photo=photo, caption=caption, has_spoiler=self.spoiler)
+                await method(**media, **self.args_, **kwargs)
             except (MediaEmpty, WebpageCurlFailed):
-                photo = await aiohttp_tools.in_memory_dl(photo)
-                await self.message._client.send_photo(**self.args_, photo=photo, caption=caption, has_spoiler=self.spoiler)
+                key, value = list(media.items())[0]
+                media[key] = await aiohttp_tools.in_memory_dl(value)
+                await method(**media, **self.args_, **kwargs)
         except PhotoSaveFileInvalid:
-            await self.message._client.send_document(**self.args, document=photo, caption=caption, force_document=True)
-
-    async def send_video(self, video, caption, thumb):
-        try:
-            await self.message._client.send_video(
-                **self.args_, video=video, caption=caption, thumb=await aiohttp_tools.thumb_dl(thumb), has_spoiler=self.spoiler
-            )
-        except (MediaEmpty, WebpageCurlFailed):
-            video = await aiohttp_tools.in_memory_dl(video)
-            await self.message._client.send_video(
-                **self.args_, video=video, caption=caption, thumb=await aiohttp_tools.thumb_dl(thumb), has_spoiler=self.spoiler
-            )
-
-    async def send_animation(self, gif, caption):
-        try:
-            await self.message._client.send_animation(**self.args_, animation=gif, caption=caption, unsave=True, has_spoiler=self.spoiler)
-        except (MediaEmpty, WebpageCurlFailed):
-            gif = await aiohttp_tools.in_memory_dl(gif)
-            await self.message._client.send_animation(**self.args_, animation=gif, caption=caption, unsave=True, has_spoiler=self.spoiler)
+            await self.__client.send_document(**self.args_, document=media, caption=caption, force_document=True)
 
     async def send_document(self, docs, caption, path=""):
         if not path:
@@ -112,10 +114,10 @@ class ExtractAndSendMedia:
             docs = glob.glob(f"{path}/*")
         for doc in docs:
             try:
-                await self.message._client.send_document(**self.args_, document=doc, caption=caption, force_document=True)
+                await self.__client.send_document(**self.args_, document=doc, caption=caption, force_document=True)
             except (MediaEmpty, WebpageCurlFailed):
                 doc = await aiohttp_tools.in_memory_dl(doc)
-                await self.message._client.send_document(**self.args_, document=doc, caption=caption, force_document=True)
+                await self.__client.send_document(**self.args_, document=doc, caption=caption, force_document=True)
             await asyncio.sleep(0.5)
 
     async def send_group(self, media, caption):
@@ -125,9 +127,9 @@ class ExtractAndSendMedia:
             sorted = await self.sort_media_urls(media.link, caption)
         for data in sorted:
             if isinstance(data, list):
-                await self.message._client.send_media_group(**self.args_, media=data)
+                await self.__client.send_media_group(**self.args_, media=data)
             else:
-                await self.send_animation(data, caption=caption)
+                await self.send(media={"animation": data}, method=self.__client.send_animation, caption=caption, has_spoiler=self.spoiler, unsave=True)
             await asyncio.sleep(1)
 
     async def sort_media_path(self, path, caption):

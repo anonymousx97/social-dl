@@ -7,7 +7,7 @@ from pyrogram.enums import ParseMode
 
 from app import Config
 from app.core import shell
-from app.core.aiohttp_tools import SESSION, in_memory_dl
+from app.core import aiohttp_tools as aio
 
 # Run shell commands
 

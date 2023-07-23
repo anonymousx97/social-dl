@@ -30,6 +30,8 @@ class Instagram(ScraperConfig):
 
 
     async def api_dl(self):
+        if not Config.API_KEYS:
+            return
         param = {"api_key": await self.get_key(), "url": self.url, "proxy": "residential", "js": False}
         response = await aiohttp_tools.get_json(url="https://api.webscraping.ai/html", timeout=30, params=param)
         if not response or "data" not in response or not response["data"]["shortcode_media"]:

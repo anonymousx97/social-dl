@@ -11,7 +11,7 @@ async def dl(bot, message):
     media = await ExtractAndSendMedia.process(message)
     if media.exceptions:
         exceptions = "\n".join(media.exceptions)
-        await bot.log(text=exceptions, func="DL", chat=message.chat.id, name="traceback.txt")
+        await bot.log(text=exceptions, func="DL", chat=message.chat.title or message.chat.first_name, name="traceback.txt")
         return await reply.edit(f"Media Download Failed.")
     if media.media_objects:
         await message.delete()
@@ -26,7 +26,7 @@ async def cmd_dispatcher(bot, message):
     try:
         await func(bot, parsed_message)
     except BaseException:
-        await bot.log(text=str(traceback.format_exc()), chat=message.chat.id, func=func.__name__, name="traceback.txt")
+        await bot.log(text=str(traceback.format_exc()), chat=message.chat.title or message.chat.first_name, func=func.__name__, name="traceback.txt")
 
 
 @bot.on_message(filters.chat_filter)
@@ -36,4 +36,4 @@ async def dl_dispatcher(bot, message):
     try:
         await func(bot, parsed_message)
     except BaseException:
-        await bot.log(text=str(traceback.format_exc()), chat=message.chat.id, func=func.__name__, name="traceback.txt")
+        await bot.log(text=str(traceback.format_exc()), chat=message.chat.title or message.chat.first_name, func=func.__name__, name="traceback.txt")

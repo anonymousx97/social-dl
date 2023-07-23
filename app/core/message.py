@@ -24,7 +24,7 @@ class Message(MSG):
             self.reply_id = replied.id
 
     def flags_n_input(self):
-        self.flags = [i for i in self.text.split() if i.startswith("-")]
+        self.flags = [i for i in self.text.split() if i.startswith("-") ]
         split_cmd_str = self.text.split(maxsplit=1)
         if len(split_cmd_str) > 1:
             self.input = split_cmd_str[-1]

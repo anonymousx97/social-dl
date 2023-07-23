@@ -45,7 +45,8 @@ class Reddit(ScraperConfig):
 
         else:
             self.link = json_.get("preview", {}).get("reddit_video_preview", {}).get("fallback_url", json_.get("url_overridden_by_dest", "")).strip()
-
+            if not self.link:
+                return
             if self.link.endswith(".gif"):
                 self.gif = self.success = True
             else:

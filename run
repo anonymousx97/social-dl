@@ -1,0 +1,14 @@
+#!/bin/sh
+
+if [ "$API_PORT" ] ; then
+py_code="
+from aiohttp import web
+app = web.Application()
+app.router.add_get('/', lambda _: web.Response(text='Web Server Running...'))
+web.run_app(app, host='0.0.0.0', port=$API_PORT, reuse_port=True, print=None)
+"
+    python3 -q -c "$py_code" & echo "Dummy Web Server Started..."
+
+fi
+
+python3 -m app

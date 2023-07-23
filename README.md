@@ -26,6 +26,8 @@
      ```
 
 ### Installation:
+  Note: If deploying using Dockerfile add UPSTREAM_REPO var with repo link as it's value.
+
   ```bash
   # Install required packages.
   apt install -y python3 git curl python-pip ffmpeg

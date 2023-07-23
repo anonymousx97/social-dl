@@ -94,7 +94,7 @@ async def add_chat(bot, message):
         message_id=Config.AUTO_DL_MESSAGE_ID,
     ):
         return await message.reply(err)
-    await message.reply(f"<b>{message.chat.title}</b> Added to Authorised List.")
+    await message.reply(f"<b>{message.chat.title or message.chat.first_name}</b> Added to Authorised List.")
 
 
 @bot.add_cmd(cmd="delchat")
@@ -110,7 +110,7 @@ async def add_chat(bot, message):
         message_id=Config.AUTO_DL_MESSAGE_ID,
     ):
         return await message.reply(err)
-    await message.reply(f"<b>{message.chat.title}</b> Added Removed from Authorised List.")
+    await message.reply(f"<b>{message.chat.title or message.chat.first_name}</b> Added Removed from Authorised List.")
 
 
 

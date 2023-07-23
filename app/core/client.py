@@ -16,12 +16,15 @@ from app.core.message import Message
 
 
 class BOT(Client):
-    _LOADED = False
 
     def __init__(self):
+        if string := os.environ.get("STRING_SESSION"):
+            mode_arg = { "session_string": string }
+        else:
+            mode_arg = { "bot_token": os.environ.get("BOT_TOKEN") }
         super().__init__(
             name="bot",
-            session_string=os.environ.get("STRING_SESSION"),
+            **mode_arg,
             api_id=int(os.environ.get("API_ID")),
             api_hash=os.environ.get("API_HASH"),
             in_memory=True,
@@ -60,12 +63,11 @@ class BOT(Client):
     async def import_modules(self):
         for module_ in glob.glob("app/*/*.py"):
             importlib.import_module(os.path.splitext(module_.replace("/", "."))[0])
-        self._LOADED = True
 
-    async def log(self, text, chat=None, func=None, name="log.txt"):
+    async def log(self, text, chat=None, func=None, name="log.txt",disable_web_page_preview=True):
         if chat or func:
             text = f"<b>Function:</b> {func}\n<b>Chat:</b> {chat}\n<b>Traceback:</b>\n{text}"
-        return await self.send_message(chat_id=Config.LOG_CHAT, text=text, name=name)
+        return await self.send_message(chat_id=Config.LOG_CHAT, text=text, name=name, disable_web_page_preview=disable_web_page_preview)
 
     async def restart(self):
         await aiohttp_tools.session_switch()
