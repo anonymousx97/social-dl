@@ -2,7 +2,7 @@ import os
 import json
 
 class Config:
-    API_KEYS = json.loads(os.envion.get("API_KEYS", "[]"))
+    API_KEYS = json.loads(os.environ.get("API_KEYS", "[]"))
 
     BLOCKED_USERS = []
     BLOCKED_USERS_MESSAGE_ID = int(os.environ.get("BLOCKED_USERS_MESSAGE_ID",0))

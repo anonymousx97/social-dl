@@ -29,6 +29,8 @@ class BOT(Client):
             api_hash=os.environ.get("API_HASH"),
             in_memory=True,
             parse_mode=ParseMode.DEFAULT,
+            sleep_threshold=30,
+            max_concurrent_transmissions=2,
         )
 
     def add_cmd(self, cmd, trigger=Config.TRIGGER):  # Custom triggers To do
