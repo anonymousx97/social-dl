@@ -14,7 +14,6 @@ from app.core import aiohttp_tools, shell
 from pyrogram.errors import MediaEmpty, PhotoSaveFileInvalid, WebpageCurlFailed
 from pyrogram.types import InputMediaPhoto, InputMediaVideo
 
-# Thanks Jeel Patel for the concept TG[@jeelpatel231]
 url_map = {
     "tiktok.com": Tiktok,
     "www.instagram.com": Instagram,
@@ -136,9 +135,9 @@ class ExtractAndSendMedia:
         [os.rename(file_, file_ + ".png") for file_ in glob.glob(f"{path}/*.webp")]
         images, videos, animations = [], [], []
         for file in glob.glob(f"{path}/*"):
-            if file.endswith((".png", ".jpg", ".jpeg")):
+            if file.lower().endswith((".png", ".jpg", ".jpeg")):
                 images.append(InputMediaPhoto(file, caption=caption, has_spoiler=self.spoiler))
-            if file.endswith((".mp4", ".mkv", ".webm")):
+            if file.lower().endswith((".mp4", ".mkv", ".webm")):
                 has_audio = await shell.check_audio(file)
                 if not has_audio:
                     animations.append(file)
@@ -150,11 +149,12 @@ class ExtractAndSendMedia:
         images, videos, animations = [], [], []
         downloads = await asyncio.gather(*[aiohttp_tools.in_memory_dl(url) for url in urls])
         for file_obj in downloads:
-            if file_obj.name.endswith((".png", ".jpg", ".jpeg")):
+            name = file_obj.name.lower()
+            if name.endswith((".png", ".jpg", ".jpeg")):
                 images.append(InputMediaPhoto(file_obj, caption=caption, has_spoiler=self.spoiler))
-            if file_obj.name.endswith((".mp4", ".mkv", ".webm")):
+            if name.endswith((".mp4", ".mkv", ".webm")):
                 videos.append(InputMediaVideo(file_obj, caption=caption, has_spoiler=self.spoiler))
-            if file_obj.name.endswith(".gif"):
+            if name.endswith(".gif"):
                 animations.append(file_obj)
         return await self.make_chunks(images, videos, animations)
 

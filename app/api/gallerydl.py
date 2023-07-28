@@ -24,4 +24,4 @@ class Gallery_DL(ScraperConfig):
         files = glob.glob(f"{self.path}/*")
         if not files:
             return self.cleanup()
-        self.link = self.success = True
+        self.link = self.group = self.success = True

@@ -1,7 +1,6 @@
 import asyncio
 import os
 import time
-from urllib.parse import urlparse
 
 import yt_dlp
 
@@ -40,19 +39,18 @@ class YT_DL(ScraperConfig):
         }
 
     async def download_or_extract(self):
-        if "/playlist" in self.url:
-            return
         if "youtu" in self.url:
-            if not urlparse(self.url).query:
+            if "/playlist" in self.url or "/live" in self.url or os.path.basename(self.url).startswith("@"):
                 return
             self._opts["format"] = "bv[ext=mp4][res=480]+ba[ext=m4a]/b[ext=mp4]"
-        if "shorts" in self.url:
+        if "/shorts" in self.url:
             self._opts["format"] = "bv[ext=mp4][res=720]+ba[ext=m4a]/b[ext=mp4]"
 
         yt_obj = yt_dlp.YoutubeDL(self._opts)
 
         info = yt_obj.extract_info(self.url, download=False)
-        if info.get("duration", 0) >= 300:
+
+        if not info or info.get("duration", 0) >= 300:
             return
 
         await asyncio.to_thread(yt_obj.download, self.url)

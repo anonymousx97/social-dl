@@ -38,6 +38,11 @@
 
   # Install Pypi packages
   pip install -U setuptools wheel
+
+  # For Termux Env:
+  grep -v uvloop req.txt | xargs -n 1 pip install
+
+  # For Non Termux Env:
   pip install -r req.txt
 
   #Setup config.env

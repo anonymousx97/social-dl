@@ -45,8 +45,6 @@ async def get_ids(bot, message):
 @bot.add_cmd(cmd="join")
 async def join_chat(bot, message):
     chat = message.input
-    if chat.isdigit():
-        chat = int(f"-100{chat}")
     try:
         await bot.join_chat(chat)
     except (KeyError, BadRequest):

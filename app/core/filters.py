@@ -6,14 +6,19 @@ from app import Config
 from app.core.MediaHandler import url_map
 
 
-def DYNAMIC_CHAT_FILTER(_, __, message):
-    if not message.text or not message.text.startswith("https"):
+def Dynamic_Chat_Filter(_, __, message):
+    if (
+        not message.text
+        or not message.text.startswith("https")
+        or message.chat.id not in Config.CHATS
+        or message.forward_from_chat
+    ):
         return False
-    chat_check = message.chat.id in Config.CHATS
-    user_check = True
-    if user := message.from_user:
-        user_check = user.id not in Config.BLOCKED_USERS and not user.is_bot
-    return bool(chat_check and user_check and check_for_urls(message.text.split()))
+    user = message.from_user
+    if user and ( user.id in Config.BLOCKED_USERS or user.is_bot ):
+        return False
+    url_check = check_for_urls(message.text.split())
+    return bool(url_check)
 
 
 def check_for_urls(text_list):
@@ -26,16 +31,21 @@ def check_for_urls(text_list):
                     return True
 
 
-def DYNAMIC_CMD_FILTER(_, __, message):
-    if not message.text or not message.text.startswith(Config.TRIGGER):
+def Dynamic_Cmd_Filter(_, __, message):
+    if (
+        not message.text
+        or not message.text.startswith(Config.TRIGGER)
+        or not message.from_user
+        or message.from_user.id not in Config.USERS
+    ):
         return False
-    cmd_check = message.text.split(maxsplit=1)[0].replace(Config.TRIGGER, "", 1) in Config.CMD_DICT
-    user_check = False
-    if user := message.from_user:
-        user_check = user.id in Config.USERS
-    reaction_check = bool(not message.reactions)
-    return bool(cmd_check and user_check and reaction_check)
+
+    start_str = message.text.split(maxsplit=1)[0]
+    cmd = start_str.replace(Config.TRIGGER, "", 1)
+    cmd_check = cmd in Config.CMD_DICT
+    reaction_check = not message.reactions
+    return bool(cmd_check and reaction_check)
 
 
-chat_filter = _filters.create(DYNAMIC_CHAT_FILTER)
-user_filter = _filters.create(DYNAMIC_CMD_FILTER)
+chat_filter = _filters.create(Dynamic_Chat_Filter)
+user_filter = _filters.create(Dynamic_Cmd_Filter)

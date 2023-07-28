@@ -3,9 +3,10 @@ import os
 
 
 async def take_ss(video: str, path: str):
-    await run_shell_cmd(f'''ffmpeg -hide_banner -loglevel error -ss 0.1 -i "{video}" -vframes 1 "{path}/i.png"''')
-    if os.path.isfile(path + "/i.png"):
-        return path + "/i.png"
+    thumb = f"{path}/i.png"
+    await run_shell_cmd(f'''ffmpeg -hide_banner -loglevel error -ss 0.1 -i "{video}" -vframes 1 "{thumb}"''')
+    if os.path.isfile(thumb):
+        return thumb
 
 
 async def check_audio(file):

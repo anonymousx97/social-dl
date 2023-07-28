@@ -7,7 +7,7 @@ from pyrogram.enums import ParseMode
 
 from app import Config
 from app.core import shell
-from app.core import aiohttp_tools as aio
+from app.core import aiohttp_tools as aio # isort:skip
 
 # Run shell commands
 

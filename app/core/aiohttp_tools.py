@@ -15,7 +15,7 @@ async def session_switch():
         await SESSION.close()
 
 
-async def get_json(url: str, headers: dict = None, params: dict = None, retry: bool = False, json_: bool = False, timeout: int = 10):
+async def get_json(url: str, headers: dict = None, params: dict = None, json_: bool = False, timeout: int = 10):
     try:
         async with SESSION.get(url=url, headers=headers, params=params, timeout=timeout) as ses:
             if json_:
@@ -31,8 +31,8 @@ async def in_memory_dl(url: str):
     async with SESSION.get(url) as remote_file:
         bytes_data = await remote_file.read()
     file = BytesIO(bytes_data)
-    name = os.path.basename(urlparse(url).path.rstrip("/"))
-    if name.endswith(".webp"):
+    name = os.path.basename(urlparse(url).path.rstrip("/")).lower()
+    if name.endswith((".webp", ".heic")):
         name = name + ".jpg"
     if name.endswith(".webm"):
         name = name + ".mp4"

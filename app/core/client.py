@@ -54,15 +54,19 @@ class BOT(Client):
         await aiohttp_tools.session_switch()
 
     async def edit_restart_msg(self):
-        if (restart_msg := os.environ.get("RESTART_MSG")) and (restart_chat := os.environ.get("RESTART_CHAT")):
+        restart_msg = os.environ.get("RESTART_MSG")
+        restart_chat = os.environ.get("RESTART_CHAT")
+        if restart_msg and restart_chat:
             await super().get_chat(int(restart_chat))
             await super().edit_message_text(chat_id=int(restart_chat), message_id=int(restart_msg), text="#Social-dl\n__Started__")
             os.environ.pop("RESTART_MSG", "")
             os.environ.pop("RESTART_CHAT", "")
 
     async def import_modules(self):
-        for module_ in glob.glob("app/*/*.py"):
-            importlib.import_module(os.path.splitext(module_.replace("/", "."))[0])
+        for py_module in glob.glob("app/**/*.py", recursive=True):
+            name = os.path.splitext(py_module)[0]
+            py_name = name.replace("/", ".")
+            importlib.import_module(py_name)
 
     async def log(self, text, chat=None, func=None, name="log.txt",disable_web_page_preview=True):
         if chat or func:
@@ -75,12 +79,17 @@ class BOT(Client):
         os.execl(sys.executable, sys.executable, "-m", "app")
 
     async def set_filter_list(self):
-        if chats_id := Config.AUTO_DL_MESSAGE_ID:
+        chats_id = Config.AUTO_DL_MESSAGE_ID
+        blocked_id = Config.BLOCKED_USERS_MESSAGE_ID
+        users = Config.USERS_MESSAGE_ID
+
+        if chats_id:
             Config.CHATS = json.loads((await super().get_messages(Config.LOG_CHAT, chats_id)).text)
-        if blocked_id := Config.BLOCKED_USERS_MESSAGE_ID:
+        if blocked_id:
             Config.BLOCKED_USERS = json.loads((await super().get_messages(Config.LOG_CHAT, blocked_id)).text)
-        if users := Config.USERS_MESSAGE_ID:
+        if users:
             Config.USERS = json.loads((await super().get_messages(Config.LOG_CHAT, users)).text)
+
 
     async def send_message(self, chat_id, text, name: str = "output.txt", **kwargs):
         if len(str(text)) < 4096:
