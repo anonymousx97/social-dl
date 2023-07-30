@@ -24,7 +24,6 @@ class FakeLogger(object):
 class YT_DL(ScraperConfig):
     def __init__(self, url):
         super().__init__()
-        self.set_sauce(url)
         self.url = url
         self.path = "downloads/" + str(time.time())
         self.video_path = self.path + "/v.mp4"
@@ -35,30 +34,42 @@ class YT_DL(ScraperConfig):
             "quiet": True,
             "logger": FakeLogger(),
             "noplaylist": True,
-            "format": "best[ext=mp4]",
         }
+        self.set_format()
 
     async def download_or_extract(self):
-        if "youtu" in self.url:
-            if "/playlist" in self.url or "/live" in self.url or os.path.basename(self.url).startswith("@"):
-                return
-            self._opts["format"] = "bv[ext=mp4][res=480]+ba[ext=m4a]/b[ext=mp4]"
-        if "/shorts" in self.url:
-            self._opts["format"] = "bv[ext=mp4][res=720]+ba[ext=m4a]/b[ext=mp4]"
-
-        yt_obj = yt_dlp.YoutubeDL(self._opts)
-
-        info = yt_obj.extract_info(self.url, download=False)
-
-        if not info or info.get("duration", 0) >= 300:
+        if self.check_url():
             return
+        with yt_dlp.YoutubeDL(self._opts) as yt_obj:
+            info = await asyncio.to_thread(
+                yt_obj.extract_info, self.url, download=False
+            )
 
-        await asyncio.to_thread(yt_obj.download, self.url)
+            if not info or info.get("duration", 0) >= 300:
+                return
 
-        if "youtu" in self.url:
-            self.caption = f"""__{info.get("channel","")}__:\n**{info.get("title","")}**"""
+            await asyncio.to_thread(yt_obj.download, self.url)
+
+            if "youtu" in self.url:
+                self.caption = (
+                    f"""__{info.get("channel","")}__:\n**{info.get("title","")}**"""
+                )
 
         if os.path.isfile(self.video_path):
             self.link = self.video_path
             self.thumb = await take_ss(self.video_path, path=self.path)
             self.video = self.success = True
+
+    def check_url(self):
+        if "youtu" in self.url and (
+            "/live" in self.url or os.path.basename(self.url).startswith("@")
+        ):
+            return 1
+
+    def set_format(self):
+        if "/shorts" in self.url:
+            self._opts["format"] = "bv[ext=mp4][res=720]+ba[ext=m4a]/b[ext=mp4]"
+        elif "youtu" in self.url:
+            self._opts["format"] = "bv[ext=mp4][res=480]+ba[ext=m4a]/b[ext=mp4]"
+        else:
+            self._opts["format"] = "b[ext=mp4]"

@@ -11,12 +11,15 @@ class Threads(ScraperConfig):
     def __init__(self, url):
         super().__init__()
         self.url = url
-        self.set_sauce(url)
 
     async def download_or_extract(self):
         shortcode = os.path.basename(urlparse(self.url).path.rstrip("/"))
 
-        response = await (await aiohttp_tools.SESSION.get(f"https://www.threads.net/t/{shortcode}/embed/")).text()
+        response = await (
+            await aiohttp_tools.SESSION.get(
+                f"https://www.threads.net/t/{shortcode}/embed/"
+            )
+        ).text()
 
         soup = BeautifulSoup(response, "html.parser")
 

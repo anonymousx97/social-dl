@@ -1,14 +1,15 @@
-import os
 import json
+import os
+
 
 class Config:
     API_KEYS = json.loads(os.environ.get("API_KEYS", "[]"))
 
     BLOCKED_USERS = []
-    BLOCKED_USERS_MESSAGE_ID = int(os.environ.get("BLOCKED_USERS_MESSAGE_ID",0))
+    BLOCKED_USERS_MESSAGE_ID = int(os.environ.get("BLOCKED_USERS_MESSAGE_ID", 0))
 
     CHATS = []
-    AUTO_DL_MESSAGE_ID = int(os.environ.get("AUTO_DL_MESSAGE_ID",0))
+    AUTO_DL_MESSAGE_ID = int(os.environ.get("AUTO_DL_MESSAGE_ID", 0))
 
     CMD_DICT = {}
 
@@ -17,4 +18,4 @@ class Config:
     TRIGGER = os.environ.get("TRIGGER", ".")
 
     USERS = []
-    USERS_MESSAGE_ID = int(os.environ.get("USERS_MESSAGE_ID",0))
+    USERS_MESSAGE_ID = int(os.environ.get("USERS_MESSAGE_ID", 0))

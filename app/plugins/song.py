@@ -5,11 +5,19 @@ from time import time
 from urllib.parse import urlparse
 
 import yt_dlp
+
 from app import bot
 from app.api.ytdl import FakeLogger
 from app.core.aiohttp_tools import in_memory_dl
 
-domains = ["www.youtube.com", "youtube.com", "m.youtube.com", "youtu.be", "www.youtube-nocookie.com", "music.youtube.com"]
+domains = [
+    "www.youtube.com",
+    "youtube.com",
+    "m.youtube.com",
+    "youtu.be",
+    "www.youtube-nocookie.com",
+    "music.youtube.com",
+]
 
 
 @bot.add_cmd(cmd="song")
@@ -36,7 +44,11 @@ async def song_dl(bot, message):
         "logger": FakeLogger(),
         "outtmpl": dl_path + "%(title)s.%(ext)s",
         "format": "bestaudio",
-        "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": aformat}, {"key": "FFmpegMetadata"}, {"key": "EmbedThumbnail"}],
+        "postprocessors": [
+            {"key": "FFmpegExtractAudio", "preferredcodec": aformat},
+            {"key": "FFmpegMetadata"},
+            {"key": "EmbedThumbnail"},
+        ],
     }
     ytdl = yt_dlp.YoutubeDL(yt_opts)
     yt_info = await asyncio.to_thread(ytdl.extract_info, query_or_search)
@@ -51,6 +63,11 @@ async def song_dl(bot, message):
     await response.edit("Uploading....")
     for audio_file in down_path:
         if audio_file.endswith((".opus", ".mp3")):
-            await message.reply_audio(audio=audio_file, duration=int(duration), performer=str(artist), thumb=thumb)
+            await message.reply_audio(
+                audio=audio_file,
+                duration=int(duration),
+                performer=str(artist),
+                thumb=thumb,
+            )
     await response.delete()
     shutil.rmtree(dl_path, ignore_errors=True)

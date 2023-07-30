@@ -15,9 +15,17 @@ async def session_switch():
         await SESSION.close()
 
 
-async def get_json(url: str, headers: dict = None, params: dict = None, json_: bool = False, timeout: int = 10):
+async def get_json(
+    url: str,
+    headers: dict = None,
+    params: dict = None,
+    json_: bool = False,
+    timeout: int = 10,
+):
     try:
-        async with SESSION.get(url=url, headers=headers, params=params, timeout=timeout) as ses:
+        async with SESSION.get(
+            url=url, headers=headers, params=params, timeout=timeout
+        ) as ses:
             if json_:
                 ret_json = await ses.json()
             else:

@@ -11,14 +11,15 @@ class Gallery_DL(ScraperConfig):
     def __init__(self, url):
         super().__init__()
         self.url = url
-        self.set_sauce(url)
 
     async def download_or_extract(self):
         self.path = "downloads/" + str(time.time())
         os.makedirs(self.path)
         try:
             async with asyncio.timeout(30):
-                await shell.run_shell_cmd(f"gallery-dl -q --range '0-4' -D {self.path} '{self.url}'")
+                await shell.run_shell_cmd(
+                    f"gallery-dl -q --range '0-4' -D {self.path} '{self.url}'"
+                )
         except TimeoutError:
             pass
         files = glob.glob(f"{self.path}/*")

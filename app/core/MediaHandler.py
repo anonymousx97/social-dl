@@ -4,6 +4,9 @@ import os
 import traceback
 from urllib.parse import urlparse
 
+from pyrogram.errors import MediaEmpty, PhotoSaveFileInvalid, WebpageCurlFailed
+from pyrogram.types import InputMediaPhoto, InputMediaVideo
+
 from app.api.gallerydl import Gallery_DL
 from app.api.instagram import Instagram
 from app.api.reddit import Reddit
@@ -11,8 +14,6 @@ from app.api.threads import Threads
 from app.api.tiktok import Tiktok
 from app.api.ytdl import YT_DL
 from app.core import aiohttp_tools, shell
-from pyrogram.errors import MediaEmpty, PhotoSaveFileInvalid, WebpageCurlFailed
-from pyrogram.types import InputMediaPhoto, InputMediaVideo
 
 url_map = {
     "tiktok.com": Tiktok,
@@ -29,32 +30,48 @@ url_map = {
 
 class ExtractAndSendMedia:
     def __init__(self, message):
-        self.exceptions, self.media_objects = [], []
+        self.exceptions, self.media_objects, self.sender_dict = [], [], {}
         self.__client = message._client
         self.message = message
         self.doc = "-d" in message.flags
         self.spoiler = "-s" in message.flags
-        self.sender = "" if "-ns" in message.flags else f"\nShared by : {self.extract_sender()}"
         self.args_ = {
             "chat_id": self.message.chat.id,
             "reply_to_message_id": message.reply_id,
         }
 
-    def extract_sender(self):
+    def get_sender(self, reply=False):
+        if "-ns" in self.message.flags:
+            return ""
+        text = f"\nShared by : "
         author = self.message.author_signature
         sender = user.first_name if (user := self.message.from_user) else ""
-        return author or sender
+        reply_sender = ""
+        if reply:
+            reply_msg = self.message.replied
+            reply_sender = (
+                reply_user.first_name if (reply_user := reply_msg.from_user) else ""
+            )
+        if any((author, sender, reply_sender)):
+            return text + (author or sender if not reply else reply_sender)
+        else:
+            return ""
 
     async def get_media(self):
         async with asyncio.TaskGroup() as task_group:
             tasks = []
-            for link in self.message.get_text_list:
+            text_list = self.message.text_list
+            reply_text_list = self.message.reply_text_list
+            for link in text_list + reply_text_list:
+                reply = link in reply_text_list
                 if match := url_map.get(urlparse(link).netloc):
                     tasks.append(task_group.create_task(match.start(link)))
+                    self.sender_dict[link] = self.get_sender(reply=reply)
                 else:
                     for key, val in url_map.items():
                         if key in link:
                             tasks.append(task_group.create_task(val.start(link)))
+                            self.sender_dict[link] = self.get_sender(reply=reply)
         self.media_objects = [task.result() for task in tasks if task.result()]
 
     async def send_media(self):
@@ -62,7 +79,9 @@ class ExtractAndSendMedia:
             if "-nc" in self.message.flags:
                 caption = ""
             else:
-                caption = obj.caption + obj.caption_url + self.sender
+                caption = (
+                    obj.caption + obj.caption_url + self.sender_dict[obj.query_url]
+                )
             try:
                 if self.doc:
                     await self.send_document(obj.link, caption=caption, path=obj.path)
@@ -70,14 +89,14 @@ class ExtractAndSendMedia:
                     await self.send_group(obj, caption=caption)
                 elif obj.photo:
                     await self.send(
-                        media={"photo":obj.link},
+                        media={"photo": obj.link},
                         method=self.__client.send_photo,
                         caption=caption,
                         has_spoiler=self.spoiler,
                     )
                 elif obj.video:
                     await self.send(
-                        media={"video":obj.link},
+                        media={"video": obj.link},
                         method=self.__client.send_video,
                         thumb=await aiohttp_tools.thumb_dl(obj.thumb),
                         caption=caption,
@@ -85,14 +104,16 @@ class ExtractAndSendMedia:
                     )
                 elif obj.gif:
                     await self.send(
-                        media={"animation":obj.link},
+                        media={"animation": obj.link},
                         method=self.__client.send_animation,
                         caption=caption,
                         has_spoiler=self.spoiler,
                         unsave=True,
                     )
             except BaseException:
-                self.exceptions.append("\n".join([obj.caption_url.strip(), traceback.format_exc()]))
+                self.exceptions.append(
+                    "\n".join([obj.caption_url.strip(), traceback.format_exc()])
+                )
 
     async def send(self, media, method, **kwargs):
         try:
@@ -103,20 +124,28 @@ class ExtractAndSendMedia:
                 media[key] = await aiohttp_tools.in_memory_dl(value)
                 await method(**media, **self.args_, **kwargs)
         except PhotoSaveFileInvalid:
-            await self.__client.send_document(**self.args_, document=media, caption=caption, force_document=True)
+            await self.__client.send_document(
+                **self.args_, document=media, caption=caption, force_document=True
+            )
 
     async def send_document(self, docs, caption, path=""):
         if not path:
-            docs = await asyncio.gather(*[aiohttp_tools.in_memory_dl(doc) for doc in docs])
+            docs = await asyncio.gather(
+                *[aiohttp_tools.in_memory_dl(doc) for doc in docs]
+            )
         else:
             [os.rename(file_, file_ + ".png") for file_ in glob.glob(f"{path}/*.webp")]
             docs = glob.glob(f"{path}/*")
         for doc in docs:
             try:
-                await self.__client.send_document(**self.args_, document=doc, caption=caption, force_document=True)
+                await self.__client.send_document(
+                    **self.args_, document=doc, caption=caption, force_document=True
+                )
             except (MediaEmpty, WebpageCurlFailed):
                 doc = await aiohttp_tools.in_memory_dl(doc)
-                await self.__client.send_document(**self.args_, document=doc, caption=caption, force_document=True)
+                await self.__client.send_document(
+                    **self.args_, document=doc, caption=caption, force_document=True
+                )
             await asyncio.sleep(0.5)
 
     async def send_group(self, media, caption):
@@ -128,7 +157,13 @@ class ExtractAndSendMedia:
             if isinstance(data, list):
                 await self.__client.send_media_group(**self.args_, media=data)
             else:
-                await self.send(media={"animation": data}, method=self.__client.send_animation, caption=caption, has_spoiler=self.spoiler, unsave=True)
+                await self.send(
+                    media={"animation": data},
+                    method=self.__client.send_animation,
+                    caption=caption,
+                    has_spoiler=self.spoiler,
+                    unsave=True,
+                )
             await asyncio.sleep(1)
 
     async def sort_media_path(self, path, caption):
@@ -136,24 +171,34 @@ class ExtractAndSendMedia:
         images, videos, animations = [], [], []
         for file in glob.glob(f"{path}/*"):
             if file.lower().endswith((".png", ".jpg", ".jpeg")):
-                images.append(InputMediaPhoto(file, caption=caption, has_spoiler=self.spoiler))
+                images.append(
+                    InputMediaPhoto(file, caption=caption, has_spoiler=self.spoiler)
+                )
             if file.lower().endswith((".mp4", ".mkv", ".webm")):
                 has_audio = await shell.check_audio(file)
                 if not has_audio:
                     animations.append(file)
                 else:
-                    videos.append(InputMediaVideo(file, caption=caption, has_spoiler=self.spoiler))
+                    videos.append(
+                        InputMediaVideo(file, caption=caption, has_spoiler=self.spoiler)
+                    )
         return await self.make_chunks(images, videos, animations)
 
     async def sort_media_urls(self, urls, caption):
         images, videos, animations = [], [], []
-        downloads = await asyncio.gather(*[aiohttp_tools.in_memory_dl(url) for url in urls])
+        downloads = await asyncio.gather(
+            *[aiohttp_tools.in_memory_dl(url) for url in urls]
+        )
         for file_obj in downloads:
             name = file_obj.name.lower()
             if name.endswith((".png", ".jpg", ".jpeg")):
-                images.append(InputMediaPhoto(file_obj, caption=caption, has_spoiler=self.spoiler))
+                images.append(
+                    InputMediaPhoto(file_obj, caption=caption, has_spoiler=self.spoiler)
+                )
             if name.endswith((".mp4", ".mkv", ".webm")):
-                videos.append(InputMediaVideo(file_obj, caption=caption, has_spoiler=self.spoiler))
+                videos.append(
+                    InputMediaVideo(file_obj, caption=caption, has_spoiler=self.spoiler)
+                )
             if name.endswith(".gif"):
                 animations.append(file_obj)
         return await self.make_chunks(images, videos, animations)

@@ -8,7 +8,6 @@ class Tiktok(ScraperConfig):
     def __init__(self, url):
         super().__init__()
         self.url = url
-        self.set_sauce(url)
 
     async def download_or_extract(self):
         media = await tiktok_scraper.hybrid_parsing(self.url)

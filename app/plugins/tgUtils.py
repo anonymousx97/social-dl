@@ -23,7 +23,9 @@ async def purge_(bot, message: Message):
     start_message = reply.id
     end_message = message.id
     messages = [end_message] + [i for i in range(int(start_message), int(end_message))]
-    await bot.delete_messages(chat_id=message.chat.id, message_ids=messages, revoke=True)
+    await bot.delete_messages(
+        chat_id=message.chat.id, message_ids=messages, revoke=True
+    )
 
 
 @bot.add_cmd(cmd="ids")
@@ -70,4 +72,9 @@ async def leave_chat(bot, message):
 @bot.add_cmd(cmd="reply")
 async def reply(bot, message):
     text = message.input
-    await bot.send_message(chat_id=message.chat.id, text=text, reply_to_message_id=message.reply_id, disable_web_page_preview=True)
+    await bot.send_message(
+        chat_id=message.chat.id,
+        text=text,
+        reply_to_message_id=message.reply_id,
+        disable_web_page_preview=True,
+    )

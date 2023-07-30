@@ -61,8 +61,8 @@ async def add_sudo(bot, message):
         config_list=Config.USERS,
         message_id=Config.USERS_MESSAGE_ID,
     ):
-        return await message.reply(err)
-    await message.reply("User Added to Authorised List.")
+        return await message.reply(err, del_in=5)
+    await message.reply("User Added to Authorised List.", del_in=5)
 
 
 @bot.add_cmd(cmd="delsudo")
@@ -77,8 +77,8 @@ async def add_sudo(bot, message):
         config_list=Config.USERS,
         message_id=Config.USERS_MESSAGE_ID,
     ):
-        return await message.reply(err)
-    await message.reply("User Removed from Authorised List.")
+        return await message.reply(err, del_in=5)
+    await message.reply("User Removed from Authorised List.", del_in=5)
 
 
 @bot.add_cmd(cmd="addchat")
@@ -93,8 +93,11 @@ async def add_chat(bot, message):
         config_list=Config.CHATS,
         message_id=Config.AUTO_DL_MESSAGE_ID,
     ):
-        return await message.reply(err)
-    await message.reply(f"<b>{message.chat.title or message.chat.first_name}</b> Added to Authorised List.")
+        return await message.reply(err, del_in=5)
+    await message.reply(
+        f"<b>{message.chat.title or message.chat.first_name}</b> Added to Authorised List.",
+        del_in=5,
+    )
 
 
 @bot.add_cmd(cmd="delchat")
@@ -109,9 +112,11 @@ async def add_chat(bot, message):
         config_list=Config.CHATS,
         message_id=Config.AUTO_DL_MESSAGE_ID,
     ):
-        return await message.reply(err)
-    await message.reply(f"<b>{message.chat.title or message.chat.first_name}</b> Added Removed from Authorised List.")
-
+        return await message.reply(err, del_in=5)
+    await message.reply(
+        f"<b>{message.chat.title or message.chat.first_name}</b> Added Removed from Authorised List.",
+        del_in=5,
+    )
 
 
 @bot.add_cmd(cmd="block")
@@ -126,8 +131,8 @@ async def add_sudo(bot, message):
         config_list=Config.BLOCKED_USERS,
         message_id=Config.BLOCKED_USERS_MESSAGE_ID,
     ):
-        return await message.reply(err)
-    await message.reply("User Added to Ban List.")
+        return await message.reply(err, del_in=5)
+    await message.reply("User Added to Ban List.", del_in=5)
 
 
 @bot.add_cmd(cmd="unblock")
@@ -142,8 +147,5 @@ async def add_sudo(bot, message):
         config_list=Config.BLOCKED_USERS,
         message_id=Config.BLOCKED_USERS_MESSAGE_ID,
     ):
-        return await message.reply(err)
-    await message.reply("User Removed from Ban List.")
-
-
-
+        return await message.reply(err, del_in=5)
+    await message.reply("User Removed from Ban List.", del_in=5)

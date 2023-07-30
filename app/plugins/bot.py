@@ -8,14 +8,23 @@ from app import Config, bot
 @bot.add_cmd(cmd="bot")
 async def info(bot, message):
     head = "<b><a href=https://t.me/Social_DL>Social-DL</a> is running.</b>"
-    chat_count = f"\n<b>Auto-Dl enabled in: <code>{len(Config.CHATS)}</code> chats</b>\n"
+    chat_count = (
+        f"\n<b>Auto-Dl enabled in: <code>{len(Config.CHATS)}</code> chats</b>\n"
+    )
     supported_sites, photo = await bot.get_messages("Social_DL", [2, 3])
-    await photo.copy(message.chat.id, caption="\n".join([head, chat_count, supported_sites.text.html]))
+    await photo.copy(
+        message.chat.id,
+        caption="\n".join([head, chat_count, supported_sites.text.html]),
+    )
+
 
 @bot.add_cmd(cmd="help")
 async def help(bot, message):
-    commands = "\n".join([ f"<code>{Config.TRIGGER}{i}</code>" for i in Config.CMD_DICT.keys()])
-    await message.reply(f"<b>Available Commands:</b>\n\n{commands}")
+    commands = "\n".join(
+        [f"<code>{Config.TRIGGER}{i}</code>" for i in Config.CMD_DICT.keys()]
+    )
+    await message.reply(f"<b>Available Commands:</b>\n\n{commands}", del_in=30)
+
 
 @bot.add_cmd(cmd="restart")
 async def restart(bot, message):
@@ -29,4 +38,4 @@ async def restart(bot, message):
 @bot.add_cmd(cmd="update")
 async def chat_update(bot, message):
     await bot.set_filter_list()
-    await message.reply("Filters Refreshed")
+    await message.reply("Filters Refreshed", del_in=10)

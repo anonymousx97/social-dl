@@ -1,57 +1,101 @@
+import asyncio
+from functools import cached_property
+
 from pyrogram.types import Message as MSG
+
+from app import Config
 
 
 class Message(MSG):
     def __init__(self, message):
-        self.flags = []
-        self.input, self.flt_input = "", ""
-        self.replied, self.reply_id = None, None
         super().__dict__.update(message.__dict__)
-        self.set_reply_properties()
-        self.flags_n_input()
-        self.set_flt_input()
 
-    @property
-    def get_text_list(self):
-        text_list = self.text.split()
-        if self.replied and (reply_text := self.replied.text) and "dl" in text_list[0]:
-            text_list.extend(reply_text.split())
-        return text_list
+    @cached_property
+    def text_list(self):
+        return self.text.split()
 
-    def set_reply_properties(self):
-        if replied := self.reply_to_message:
-            self.replied = replied
-            self.reply_id = replied.id
+    @cached_property
+    def reply_text_list(self):
+        reply_text_list = []
+        if (
+            self.replied
+            and (reply_text := self.replied.text)
+            and "dl" in self.text_list[0]
+        ):
+            reply_text_list = self.replied.text_list
+        return reply_text_list
 
-    def flags_n_input(self):
-        self.flags = [i for i in self.text.split() if i.startswith("-") ]
-        split_cmd_str = self.text.split(maxsplit=1)
-        if len(split_cmd_str) > 1:
-            self.input = split_cmd_str[-1]
+    @cached_property
+    def cmd(self):
+        raw_cmd = self.text_list[0]
+        cmd = raw_cmd.lstrip(Config.TRIGGER)
+        return cmd if cmd in Config.CMD_DICT else None
 
-    def set_flt_input(self):
-        line_split = self.input.splitlines()
-        split_n_joined =[
-            " ".join([word for word in line.split(" ") if word not in self.flags]) 
-            for line in line_split
+    @cached_property
+    def flags(self):
+        return [i for i in self.text_list if i.startswith("-")]
+
+    @cached_property
+    def input(self):
+        if len(self.text_list) > 1:
+            return self.text.split(maxsplit=1)[-1]
+        return ""
+
+    @cached_property
+    def flt_input(self):
+        split_lines = self.input.splitlines()
+        split_n_joined = [
+            " ".join([word for word in line.split(" ") if word not in self.flags])
+            for line in split_lines
         ]
-        self.flt_input = "\n".join(split_n_joined)
+        return "\n".join(split_n_joined)
 
-    async def reply(self, text, **kwargs):
-        return await self._client.send_message(chat_id=self.chat.id, text=text, reply_to_message_id=self.id, **kwargs)
+    @cached_property
+    def replied(self):
+        if self.reply_to_message:
+            return Message.parse_message(self.reply_to_message)
 
-    async def edit(self, text, **kwargs):
+    @cached_property
+    def reply_id(self):
+        return self.replied.id if self.replied else None
+
+    async def reply(self, text, del_in: int = 0, block=True, **kwargs):
+        task = self._client.send_message(
+            chat_id=self.chat.id, text=text, reply_to_message_id=self.id, **kwargs
+        )
+        if del_in:
+            await self.async_deleter(task=task, del_in=del_in, block=block)
+        else:
+            return await task
+
+    async def edit(self, text, del_in: int = 0, block=True, **kwargs):
         if len(str(text)) < 4096:
             kwargs.pop("name", "")
-            await self.edit_text(text, **kwargs)
+            task = self.edit_text(text, **kwargs)
+            if del_in:
+                reply = await self.async_deleter(task=task, del_in=del_in, block=block)
+            else:
+                reply = await task
         else:
-            await super().delete()
-            return await self.reply(text, **kwargs)
+            _, reply = await asyncio.gather(
+                super().delete(), self.reply(text, **kwargs)
+            )
+        return reply
 
     async def delete(self, reply=False):
         await super().delete()
         if reply and self.replied:
             await self.replied.delete()
+
+    async def async_deleter(self, del_in, task, block):
+        if block:
+            x = await task
+            await asyncio.sleep(del_in)
+            await x.delete()
+        else:
+            asyncio.create_task(
+                self.async_deleter(del_in=del_in, task=task, block=True)
+            )
 
     @classmethod
     def parse_message(cls, message):

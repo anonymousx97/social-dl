@@ -14,12 +14,14 @@ class ScraperConfig:
         self.group = False
         self.gif = False
 
-    def set_sauce(self, url):
-        self.caption_url = f"\n\n<a href='{url}'>Sauce</a>"
+    def set_sauce(self):
+        self.caption_url = f"\n\n<a href='{self.query_url}'>Sauce</a>"
 
     @classmethod
     async def start(cls, url):
         obj = cls(url=url)
+        obj.query_url = url
+        obj.set_sauce()
         await obj.download_or_extract()
         if obj.success:
             return obj

@@ -15,7 +15,7 @@ def Dynamic_Chat_Filter(_, __, message):
     ):
         return False
     user = message.from_user
-    if user and ( user.id in Config.BLOCKED_USERS or user.is_bot ):
+    if user and (user.id in Config.BLOCKED_USERS or user.is_bot):
         return False
     url_check = check_for_urls(message.text.split())
     return bool(url_check)
