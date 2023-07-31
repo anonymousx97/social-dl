@@ -35,7 +35,11 @@ class BOT(Client):
         def the_decorator(func):
             @wraps(func)
             def wrapper():
-                Config.CMD_DICT[cmd] = func
+                if isinstance(cmd, list):
+                    for _cmd in cmd:
+                        Config.CMD_DICT[_cmd] = func
+                else:
+                    Config.CMD_DICT[cmd] = func
 
             wrapper()
             return func
@@ -48,7 +52,7 @@ class BOT(Client):
         await self.set_filter_list()
         await aiohttp_tools.session_switch()
         await self.edit_restart_msg()
-        await self.log(text="#Social-dl\n__Started__")
+        await self.log(text="#SocialDL\n<i>Started</i>")
         print("started")
         await idle()
         await aiohttp_tools.session_switch()
@@ -73,15 +77,23 @@ class BOT(Client):
             importlib.import_module(py_name)
 
     async def log(
-        self, text, chat=None, func=None, name="log.txt", disable_web_page_preview=True
+        self,
+        text="",
+        traceback="",
+        chat=None,
+        func=None,
+        name="log.txt",
+        disable_web_page_preview=True,
+        parse_mode=ParseMode.HTML,
     ):
-        if chat or func:
-            text = f"<b>Function:</b> {func}\n<b>Chat:</b> {chat}\n<b>Traceback:</b>\n{text}"
+        if traceback:
+            text = f"#Traceback\n<b>Function:</b> {func}\n<b>Chat:</b> {chat}\n<b>Traceback:</b>\n<code>{traceback}</code>"
         return await self.send_message(
             chat_id=Config.LOG_CHAT,
             text=text,
             name=name,
             disable_web_page_preview=disable_web_page_preview,
+            parse_mode=parse_mode,
         )
 
     async def restart(self):

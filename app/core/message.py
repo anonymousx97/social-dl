@@ -1,6 +1,7 @@
 import asyncio
 from functools import cached_property
 
+from pyrogram.errors import MessageDeleteForbidden
 from pyrogram.types import Message as MSG
 
 from app import Config
@@ -83,9 +84,12 @@ class Message(MSG):
         return reply
 
     async def delete(self, reply=False):
-        await super().delete()
-        if reply and self.replied:
-            await self.replied.delete()
+        try:
+            await super().delete()
+            if reply and self.replied:
+                await self.replied.delete()
+        except MessageDeleteForbidden:
+            pass
 
     async def async_deleter(self, del_in, task, block):
         if block:
