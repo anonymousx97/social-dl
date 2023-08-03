@@ -17,9 +17,7 @@ async def run_cmd(bot, message):
     cmd = message.input.strip()
     reply = await message.reply("executing...")
     try:
-        proc_stdout = await asyncio.Task(
-            shell.run_shell_cmd(cmd), name=f"{message.chat.id}-{reply.id}"
-        )
+        proc_stdout = await asyncio.Task(shell.run_shell_cmd(cmd), name=reply.task_id)
     except asyncio.exceptions.CancelledError:
         return await reply.edit("`Cancelled...`")
     output = f"`${cmd}`\n\n`{proc_stdout}`"
@@ -28,12 +26,12 @@ async def run_cmd(bot, message):
 
 # Shell but Live Output
 async def live_shell(bot, message):
+    cmd = message.input.strip()
+    reply = await message.reply("`getting live output....`")
+    sub_process = await shell.AsyncShell.run_cmd(cmd)
+    sleep_for = 1
+    output = ""
     try:
-        cmd = message.input.strip()
-        reply = await message.reply("`getting live output....`")
-        sub_process = await shell.AsyncShell.run_cmd(cmd)
-        sleep_for = 1
-        output = ""
         async for stdout in sub_process.get_output():
             if output != stdout:
                 if len(stdout) <= 4096:
@@ -43,11 +41,9 @@ async def live_shell(bot, message):
                         parse_mode=ParseMode.MARKDOWN,
                     )
                 output = stdout
-            if sleep_for >= 5:
+            if sleep_for >= 6:
                 sleep_for = 1
-            await asyncio.Task(
-                asyncio.sleep(sleep_for), name=f"{message.chat.id}-{reply.id}"
-            )
+            await asyncio.Task(asyncio.sleep(sleep_for), name=reply.task_id)
             sleep_for += 1
         return await reply.edit(
             f"`$ {cmd}\n\n``{sub_process.full_std}`",
@@ -55,7 +51,8 @@ async def live_shell(bot, message):
             disable_web_page_preview=True,
         )
     except asyncio.exceptions.CancelledError:
-        return await reply.edit("`Cancelled...`")
+        sub_process.cancel()
+        return await reply.edit(f"`Cancelled....`")
 
 
 # Run Python code
@@ -74,7 +71,7 @@ async def executor(bot, message):
         # Create and initialise the function
         exec(f"async def _exec(bot, message):\n    {formatted_code}")
         func_out = await asyncio.Task(
-            locals()["_exec"](bot, message), name=f"{message.chat.id}-{reply.id}"
+            locals()["_exec"](bot, message), name=reply.task_id
         )
     except asyncio.exceptions.CancelledError:
         return await reply.edit("`Cancelled....`")
@@ -82,9 +79,11 @@ async def executor(bot, message):
         func_out = str(traceback.format_exc())
     sys.stdout = sys.__stdout__
     sys.stderr = sys.__stderr__
-    output = f"`{codeOut.getvalue().strip() or codeErr.getvalue().strip() or func_out}`"
+    output = codeErr.getvalue().strip() or codeOut.getvalue().strip()
+    if func_out is not None:
+        output = "\n\n".join([output, str(func_out)]).strip()
     if "-s" not in message.flags:
-        output = f"> `{code}`\n\n>>  {output}"
+        output = f"> `{code}`\n\n>>  `{output}`"
     return await reply.edit(
         output,
         name="exec.txt",

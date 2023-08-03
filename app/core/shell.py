@@ -27,7 +27,6 @@ async def run_shell_cmd(cmd):
 
 
 class AsyncShell:
-
     def __init__(self, process):
         self.process = process
         self.full_std = ""
@@ -46,6 +45,11 @@ class AsyncShell:
         while not self.is_done:
             yield self.full_std
 
+    def cancel(self):
+        if not self.is_done:
+            self.process.kill()
+            self._task.cancel()
+
     @classmethod
     async def run_cmd(cls, cmd, name="shell"):
         sub_process = cls(
@@ -53,6 +57,8 @@ class AsyncShell:
                 cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
             )
         )
-        asyncio.create_task(sub_process.read_output())
+        sub_process._task = asyncio.create_task(
+            sub_process.read_output(), name="AsyncShell"
+        )
         await asyncio.sleep(0.5)
         return sub_process

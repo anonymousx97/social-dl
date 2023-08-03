@@ -13,7 +13,7 @@ async def dl(bot, message):
         chat_id=message.chat.id, text="`trying to download...`"
     )
     coro = ExtractAndSendMedia.process(message)
-    task = asyncio.Task(coro, name=f"{message.chat.id}-{message.id}")
+    task = asyncio.Task(coro, name=message.task_id)
     media = await task
     if media.exceptions:
         exceptions = "\n".join(media.exceptions)
@@ -32,11 +32,11 @@ async def dl(bot, message):
 @bot.on_message(filters.user_filter)
 @bot.on_edited_message(filters.user_filter)
 async def cmd_dispatcher(bot, message):
-    parsed_message = Message.parse_message(message)
-    func = Config.CMD_DICT[parsed_message.cmd]
-    coro = func(bot, parsed_message)
+    message = Message.parse_message(message)
+    func = Config.CMD_DICT[message.cmd]
+    coro = func(bot, message)
     try:
-        task = asyncio.Task(coro, name=f"{message.chat.id}-{message.id}")
+        task = asyncio.Task(coro, name=message.task_id)
         await task
     except asyncio.exceptions.CancelledError:
         await bot.log(text=f"<b>#Cancelled</b>:\n<code>{message.text}</code>")
@@ -51,10 +51,10 @@ async def cmd_dispatcher(bot, message):
 
 @bot.on_message(filters.chat_filter)
 async def dl_dispatcher(bot, message):
-    parsed_message = Message.parse_message(message)
-    coro = dl(bot, parsed_message)
+    message = Message.parse_message(message)
+    coro = dl(bot, message)
     try:
-        task = asyncio.Task(coro, name=f"{message.chat.id}-{message.id}")
+        task = asyncio.Task(coro, name=message.task_id)
         await task
     except asyncio.exceptions.CancelledError:
         await bot.log(text=f"<b>#Cancelled</b>:\n<code>{message.text}</code>")

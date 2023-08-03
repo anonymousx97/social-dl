@@ -56,7 +56,10 @@ class Scraper:
                 if self.config["Scraper"]["Use_different_protocols"] == "False":
                     self.proxies = {"all": self.config["Scraper"]["All"]}
                 else:
-                    self.proxies = {"http": self.config["Scraper"]["Http_proxy"], "https": self.config["Scraper"]["Https_proxy"]}
+                    self.proxies = {
+                        "http": self.config["Scraper"]["Http_proxy"],
+                        "https": self.config["Scraper"]["Https_proxy"],
+                    }
             else:
                 self.proxies = None
         # 配置文件不存在则不使用代理/If the configuration file does not exist, do not use
@@ -75,7 +78,10 @@ class Scraper:
         try:
             # 从输入文字中提取索引链接存入列表/Extract index links from input text and store in
             # list
-            url = re.findall("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+", text)
+            url = re.findall(
+                "http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+",
+                text,
+            )
             # 判断是否有链接/Check if there is a link
             if len(url) > 0:
                 return url[0]
@@ -88,7 +94,9 @@ class Scraper:
     @staticmethod
     def generate_x_bogus_url(url: str, headers: dict) -> str:
         query = urllib.parse.urlparse(url).query
-        xbogus = execjs.compile(open("./X-Bogus.js").read()).call("sign", query, headers["User-Agent"])
+        xbogus = execjs.compile(open("./X-Bogus.js").read()).call(
+            "sign", query, headers["User-Agent"]
+        )
         new_url = url + "&X-Bogus=" + xbogus
         return new_url
 
@@ -127,7 +135,13 @@ class Scraper:
                     print("正在通过抖音分享链接获取原始链接...")
                 try:
                     async with aiohttp.ClientSession() as session:
-                        async with session.get(url, headers=self.headers, proxy=self.proxies, allow_redirects=False, timeout=10) as response:
+                        async with session.get(
+                            url,
+                            headers=self.headers,
+                            proxy=self.proxies,
+                            allow_redirects=False,
+                            timeout=10,
+                        ) as response:
                             if response.status == 302:
                                 url = (
                                     response.headers["Location"].split("?")[0]
@@ -165,7 +179,13 @@ class Scraper:
                     print("正在通过TikTok分享链接获取原始链接...")
                 try:
                     async with aiohttp.ClientSession() as session:
-                        async with session.get(url, headers=self.headers, proxy=self.proxies, allow_redirects=False, timeout=10) as response:
+                        async with session.get(
+                            url,
+                            headers=self.headers,
+                            proxy=self.proxies,
+                            allow_redirects=False,
+                            timeout=10,
+                        ) as response:
                             if response.status == 301:
                                 url = (
                                     response.headers["Location"].split("?")[0]
@@ -209,7 +229,9 @@ class Scraper:
         """
         # 调用JavaScript函数
         query = urllib.parse.urlparse(url).query
-        xbogus = execjs.compile(open("./X-Bogus.js").read()).call("sign", query, self.headers["User-Agent"])
+        xbogus = execjs.compile(open("./X-Bogus.js").read()).call(
+            "sign", query, self.headers["User-Agent"]
+        )
         if not quiet_mode:
             print("生成的X-Bogus签名为: {}".format(xbogus))
         new_url = url + "&X-Bogus=" + xbogus
@@ -275,7 +297,12 @@ class Scraper:
             if not quiet_mode:
                 print("正在获取视频数据API: {}".format(api_url))
             async with aiohttp.ClientSession() as session:
-                async with session.get(api_url, headers=self.douyin_api_headers, proxy=self.proxies, timeout=10) as response:
+                async with session.get(
+                    api_url,
+                    headers=self.douyin_api_headers,
+                    proxy=self.proxies,
+                    timeout=10,
+                ) as response:
                     response = await response.json()
                     # 获取视频数据/Get video data
                     video_data = response["aweme_detail"]
@@ -297,12 +324,19 @@ class Scraper:
             print("正在获取抖音视频数据...")
         try:
             # 构造访问链接/Construct the access link
-            api_url = f"https://live.douyin.com/webcast/web/enter/?aid=6383&web_rid={web_rid}"
+            api_url = (
+                f"https://live.douyin.com/webcast/web/enter/?aid=6383&web_rid={web_rid}"
+            )
             # 访问API/Access API
             if not quiet_mode:
                 print("正在获取视频数据API: {}".format(api_url))
             async with aiohttp.ClientSession() as session:
-                async with session.get(api_url, headers=self.douyin_api_headers, proxy=self.proxies, timeout=10) as response:
+                async with session.get(
+                    api_url,
+                    headers=self.douyin_api_headers,
+                    proxy=self.proxies,
+                    timeout=10,
+                ) as response:
                     response = await response.json()
                     # 获取视频数据/Get video data
                     video_data = response["data"]
@@ -319,12 +353,16 @@ class Scraper:
 
     # 获取单个抖音视频数据/Get single Douyin video data
     @retry(stop=stop_after_attempt(4), wait=wait_fixed(7))
-    async def get_douyin_user_profile_videos(self, profile_url: str, tikhub_token: str) -> Union[dict, None]:
+    async def get_douyin_user_profile_videos(
+        self, profile_url: str, tikhub_token: str
+    ) -> Union[dict, None]:
         try:
             api_url = f"https://api.tikhub.io/douyin_profile_videos/?douyin_profile_url={profile_url}&cursor=0&count=20"
             _headers = {"Authorization": f"Bearer {tikhub_token}"}
             async with aiohttp.ClientSession() as session:
-                async with session.get(api_url, headers=_headers, proxy=self.proxies, timeout=10) as response:
+                async with session.get(
+                    api_url, headers=_headers, proxy=self.proxies, timeout=10
+                ) as response:
                     response = await response.json()
                     return response
         except Exception as e:
@@ -335,12 +373,16 @@ class Scraper:
 
     # 获取抖音主页点赞视频数据/Get Douyin profile like video data
     @retry(stop=stop_after_attempt(4), wait=wait_fixed(7))
-    async def get_douyin_profile_liked_data(self, profile_url: str, tikhub_token: str) -> Union[dict, None]:
+    async def get_douyin_profile_liked_data(
+        self, profile_url: str, tikhub_token: str
+    ) -> Union[dict, None]:
         try:
             api_url = f"https://api.tikhub.io/douyin_profile_liked_videos/?douyin_profile_url={profile_url}&cursor=0&count=20"
             _headers = {"Authorization": f"Bearer {tikhub_token}"}
             async with aiohttp.ClientSession() as session:
-                async with session.get(api_url, headers=_headers, proxy=self.proxies, timeout=10) as response:
+                async with session.get(
+                    api_url, headers=_headers, proxy=self.proxies, timeout=10
+                ) as response:
                     response = await response.json()
                     return response
         except Exception as e:
@@ -351,12 +393,16 @@ class Scraper:
 
     # 获取抖音视频评论数据/Get Douyin video comment data
     @retry(stop=stop_after_attempt(4), wait=wait_fixed(7))
-    async def get_douyin_video_comments(self, video_url: str, tikhub_token: str) -> Union[dict, None]:
+    async def get_douyin_video_comments(
+        self, video_url: str, tikhub_token: str
+    ) -> Union[dict, None]:
         try:
             api_url = f"https://api.tikhub.io/douyin_video_comments/?douyin_video_url={video_url}&cursor=0&count=20"
             _headers = {"Authorization": f"Bearer {tikhub_token}"}
             async with aiohttp.ClientSession() as session:
-                async with session.get(api_url, headers=_headers, proxy=self.proxies, timeout=10) as response:
+                async with session.get(
+                    api_url, headers=_headers, proxy=self.proxies, timeout=10
+                ) as response:
                     response = await response.json()
                     return response
         except Exception as e:
@@ -406,7 +452,12 @@ class Scraper:
             if not quiet_mode:
                 print("正在获取视频数据API: {}".format(api_url))
             async with aiohttp.ClientSession() as session:
-                async with session.get(api_url, headers=self.tiktok_api_headers, proxy=self.proxies, timeout=10) as response:
+                async with session.get(
+                    api_url,
+                    headers=self.tiktok_api_headers,
+                    proxy=self.proxies,
+                    timeout=10,
+                ) as response:
                     response = await response.json()
                     video_data = response["aweme_list"][0]
                     if not quiet_mode:
@@ -419,12 +470,16 @@ class Scraper:
             raise e
 
     @retry(stop=stop_after_attempt(4), wait=wait_fixed(7))
-    async def get_tiktok_user_profile_videos(self, tiktok_video_url: str, tikhub_token: str) -> Union[dict, None]:
+    async def get_tiktok_user_profile_videos(
+        self, tiktok_video_url: str, tikhub_token: str
+    ) -> Union[dict, None]:
         try:
             api_url = f"https://api.tikhub.io/tiktok_profile_videos/?tiktok_video_url={tiktok_video_url}&cursor=0&count=20"
             _headers = {"Authorization": f"Bearer {tikhub_token}"}
             async with aiohttp.ClientSession() as session:
-                async with session.get(api_url, headers=_headers, proxy=self.proxies, timeout=10) as response:
+                async with session.get(
+                    api_url, headers=_headers, proxy=self.proxies, timeout=10
+                ) as response:
                     response = await response.json()
                     return response
         except Exception as e:
@@ -434,12 +489,16 @@ class Scraper:
             raise e
 
     @retry(stop=stop_after_attempt(4), wait=wait_fixed(7))
-    async def get_tiktok_user_profile_liked_videos(self, tiktok_video_url: str, tikhub_token: str) -> Union[dict, None]:
+    async def get_tiktok_user_profile_liked_videos(
+        self, tiktok_video_url: str, tikhub_token: str
+    ) -> Union[dict, None]:
         try:
             api_url = f"https://api.tikhub.io/tiktok_profile_liked_videos/?tiktok_video_url={tiktok_video_url}&cursor=0&count=20"
             _headers = {"Authorization": f"Bearer {tikhub_token}"}
             async with aiohttp.ClientSession() as session:
-                async with session.get(api_url, headers=_headers, proxy=self.proxies, timeout=10) as response:
+                async with session.get(
+                    api_url, headers=_headers, proxy=self.proxies, timeout=10
+                ) as response:
                     response = await response.json()
                     return response
         except Exception as e:
@@ -458,13 +517,21 @@ class Scraper:
             print("当前链接平台为:{}".format(url_platform))
             # 获取视频ID/Get video ID
             print("正在获取视频ID...")
-        video_id = await self.get_douyin_video_id(video_url) if url_platform == "douyin" else await self.get_tiktok_video_id(video_url)
+        video_id = (
+            await self.get_douyin_video_id(video_url)
+            if url_platform == "douyin"
+            else await self.get_tiktok_video_id(video_url)
+        )
         if video_id:
             if not quiet_mode:
                 print("获取视频ID成功,视频ID为:{}".format(video_id))
                 # 获取视频数据/Get video data
                 print("正在获取视频数据...")
-            data = await self.get_douyin_video_data(video_id) if url_platform == "douyin" else await self.get_tiktok_video_data(video_id)
+            data = (
+                await self.get_douyin_video_data(video_id)
+                if url_platform == "douyin"
+                else await self.get_tiktok_video_data(video_id)
+            )
             if data:
                 if not quiet_mode:
                     print("获取视频数据成功，正在判断数据类型...")
@@ -571,7 +638,10 @@ class Scraper:
                                 no_watermark_image_list.append(i["url_list"][0])
                                 watermark_image_list.append(i["download_url_list"][0])
                             api_data = {
-                                "image_data": {"no_watermark_image_list": no_watermark_image_list, "watermark_image_list": watermark_image_list}
+                                "image_data": {
+                                    "no_watermark_image_list": no_watermark_image_list,
+                                    "watermark_image_list": watermark_image_list,
+                                }
                             }
                     # TikTok数据处理/TikTok data processing
                     elif url_platform == "tiktok":
@@ -585,8 +655,12 @@ class Scraper:
                                 "video_data": {
                                     "wm_video_url": wm_video,
                                     "wm_video_url_HQ": wm_video,
-                                    "nwm_video_url": data["video"]["play_addr"]["url_list"][0],
-                                    "nwm_video_url_HQ": data["video"]["bit_rate"][0]["play_addr"]["url_list"][0],
+                                    "nwm_video_url": data["video"]["play_addr"][
+                                        "url_list"
+                                    ][0],
+                                    "nwm_video_url_HQ": data["video"]["bit_rate"][0][
+                                        "play_addr"
+                                    ]["url_list"][0],
                                 }
                             }
                         # TikTok图片数据处理/TikTok image data processing
@@ -598,25 +672,38 @@ class Scraper:
                             # 有水印图片列表/With watermark image list
                             watermark_image_list = []
                             for i in data["image_post_info"]["images"]:
-                                no_watermark_image_list.append(i["display_image"]["url_list"][0])
-                                watermark_image_list.append(i["owner_watermark_image"]["url_list"][0])
+                                no_watermark_image_list.append(
+                                    i["display_image"]["url_list"][0]
+                                )
+                                watermark_image_list.append(
+                                    i["owner_watermark_image"]["url_list"][0]
+                                )
                             api_data = {
-                                "image_data": {"no_watermark_image_list": no_watermark_image_list, "watermark_image_list": watermark_image_list}
+                                "image_data": {
+                                    "no_watermark_image_list": no_watermark_image_list,
+                                    "watermark_image_list": watermark_image_list,
+                                }
                             }
                     # 更新数据/Update data
                     result_data.update(api_data)
                     # print("数据处理完成，最终数据: \n{}".format(result_data))
                     # 返回数据/Return data
                     return result_data
-                except Exception as e:
+                except Exception:
                     if not quiet_mode:
                         traceback.print_exc()
                         print("数据处理失败！")
-                    return {"status": "failed", "message": "数据处理失败！/Data processing failed!"}
+                    return {
+                        "status": "failed",
+                        "message": "数据处理失败！/Data processing failed!",
+                    }
             else:
                 if not quiet_mode:
                     print("[抖音|TikTok方法]返回数据为空，无法处理！")
-                return {"status": "failed", "message": "返回数据为空，无法处理！/Return data is empty and cannot be processed!"}
+                return {
+                    "status": "failed",
+                    "message": "返回数据为空，无法处理！/Return data is empty and cannot be processed!",
+                }
         else:
             if not quiet_mode:
                 print("获取视频ID失败！")
@@ -633,12 +720,24 @@ class Scraper:
                 "platform": data.get("platform"),
                 "type": data.get("type"),
                 "desc": data.get("desc"),
-                "wm_video_url": data["video_data"]["wm_video_url"] if data["type"] == "video" else None,
-                "wm_video_url_HQ": data["video_data"]["wm_video_url_HQ"] if data["type"] == "video" else None,
-                "nwm_video_url": data["video_data"]["nwm_video_url"] if data["type"] == "video" else None,
-                "nwm_video_url_HQ": data["video_data"]["nwm_video_url_HQ"] if data["type"] == "video" else None,
-                "no_watermark_image_list": data["image_data"]["no_watermark_image_list"] if data["type"] == "image" else None,
-                "watermark_image_list": data["image_data"]["watermark_image_list"] if data["type"] == "image" else None,
+                "wm_video_url": data["video_data"]["wm_video_url"]
+                if data["type"] == "video"
+                else None,
+                "wm_video_url_HQ": data["video_data"]["wm_video_url_HQ"]
+                if data["type"] == "video"
+                else None,
+                "nwm_video_url": data["video_data"]["nwm_video_url"]
+                if data["type"] == "video"
+                else None,
+                "nwm_video_url_HQ": data["video_data"]["nwm_video_url_HQ"]
+                if data["type"] == "video"
+                else None,
+                "no_watermark_image_list": data["image_data"]["no_watermark_image_list"]
+                if data["type"] == "image"
+                else None,
+                "watermark_image_list": data["image_data"]["watermark_image_list"]
+                if data["type"] == "image"
+                else None,
             }
             return result
         else:
