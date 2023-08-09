@@ -73,7 +73,7 @@ class Instagram(ScraperConfig):
 
     # Rotating Key function to avoid hitting limit on single Key
     async def get_key(self):
-        keys, count = API_KEYS
+        keys, count = API_KEYS.values()
         count += 1
         if count == len(keys):
             count = 0
