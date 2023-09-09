@@ -11,8 +11,8 @@ API_KEYS = {"KEYS": Config.API_KEYS, "counter": 0}
 class Instagram(ScraperConfig):
     def __init__(self, url):
         super().__init__()
-        shortcode = os.path.basename(urlparse(url).path.rstrip("/"))
-        self.api_url = f"https://www.instagram.com/graphql/query?query_hash=2b0673e0dc4580674a88d426fe00ea90&variables=%7B%22shortcode%22%3A%22{shortcode}%22%7D"
+        self.shortcode = os.path.basename(urlparse(url).path.rstrip("/"))
+        self.api_url = f"https://www.instagram.com/graphql/query?query_hash=2b0673e0dc4580674a88d426fe00ea90&variables=%7B%22shortcode%22%3A%22{self.shortcode}%22%7D"
         self.url = url
         self.dump = True
 
