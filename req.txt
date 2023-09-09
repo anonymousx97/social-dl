@@ -2,6 +2,7 @@ aiohttp>=3.8.4
 beautifulsoup4>=4.12.2
 Brotli>=1.0.9
 gallery_dl>=1.25.7
+gitpython>=3.1.32
 pyrogram>=2.0.106
 python-dotenv==0.21.0
 PyExecJS>=1.5.1

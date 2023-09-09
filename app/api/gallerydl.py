@@ -4,7 +4,7 @@ import os
 import time
 
 from app.core import shell
-from app.core.scraper_config import ScraperConfig
+from app.core.scraper_config import MediaType, ScraperConfig
 
 
 class Gallery_DL(ScraperConfig):
@@ -25,4 +25,5 @@ class Gallery_DL(ScraperConfig):
         files = glob.glob(f"{self.path}/*")
         if not files:
             return self.cleanup()
-        self.link = self.group = self.success = True
+        self.media = self.success = True
+        self.type = MediaType.GROUP

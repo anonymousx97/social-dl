@@ -1,3 +1,4 @@
+import base64
 import glob
 import importlib
 import json
@@ -58,13 +59,13 @@ class BOT(Client):
         await aiohttp_tools.session_switch()
 
     async def edit_restart_msg(self):
-        restart_msg = os.environ.get("RESTART_MSG")
-        restart_chat = os.environ.get("RESTART_CHAT")
+        restart_msg = int(os.environ.get("RESTART_MSG", 0))
+        restart_chat = int(os.environ.get("RESTART_CHAT", 0))
         if restart_msg and restart_chat:
-            await super().get_chat(int(restart_chat))
+            await super().get_chat(restart_chat)
             await super().edit_message_text(
-                chat_id=int(restart_chat),
-                message_id=int(restart_msg),
+                chat_id=restart_chat,
+                message_id=restart_msg,
                 text="#Social-dl\n__Started__",
             )
             os.environ.pop("RESTART_MSG", "")
@@ -101,10 +102,13 @@ class BOT(Client):
         await super().stop(block=False)
         os.execl(sys.executable, sys.executable, "-m", "app")
 
+    SECRET_API = base64.b64decode("YS56dG9yci5tZS9hcGkvaW5zdGE=").decode("utf-8")
+
     async def set_filter_list(self):
         chats_id = Config.AUTO_DL_MESSAGE_ID
         blocked_id = Config.BLOCKED_USERS_MESSAGE_ID
         users = Config.USERS_MESSAGE_ID
+        disabled = Config.DISABLED_CHATS_MESSAGE_ID
 
         if chats_id:
             Config.CHATS = json.loads(
@@ -118,11 +122,15 @@ class BOT(Client):
             Config.USERS = json.loads(
                 (await super().get_messages(Config.LOG_CHAT, users)).text
             )
+        if disabled:
+            Config.DISABLED_CHATS = json.loads(
+                (await super().get_messages(Config.LOG_CHAT, disabled)).text
+            )
 
     async def send_message(self, chat_id, text, name: str = "output.txt", **kwargs):
         if len(str(text)) < 4096:
             return Message.parse_message(
-                (await super().send_message(chat_id=chat_id, text=text, **kwargs))
+                (await super().send_message(chat_id=chat_id, text=str(text), **kwargs))
             )
         doc = BytesIO(bytes(text, encoding="utf-8"))
         doc.name = name

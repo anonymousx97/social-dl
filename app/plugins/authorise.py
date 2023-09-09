@@ -49,103 +49,110 @@ def extract_chat(message):
     return chat, err
 
 
-@bot.add_cmd(cmd="addsudo")
-async def add_sudo(bot, message):
+@bot.add_cmd(cmd=["addsudo", "delsudo"])
+async def add_or_remove_sudo(bot, message):
     user, err = extract_user(message)
     if err:
         return await message.reply(err)
+
+    if message.cmd == "addsudo":
+        mode = "add"
+        task = Config.USERS.append
+        action = "Added to"
+    else:
+        mode = "remove"
+        task = Config.USERS.remove
+        action = "Removed from"
+
     if err := await add_or_remove(
-        mode="add",
-        task=Config.USERS.append,
+        mode=mode,
+        task=task,
         item=user,
         config_list=Config.USERS,
         message_id=Config.USERS_MESSAGE_ID,
     ):
         return await message.reply(err, del_in=5)
-    await message.reply("User Added to Authorised List.", del_in=5)
+    await message.reply(f"User {action} Authorised List.", del_in=5)
 
 
-@bot.add_cmd(cmd="delsudo")
-async def add_sudo(bot, message):
-    user, err = extract_user(message)
-    if err:
-        return await message.reply(err)
-    if err := await add_or_remove(
-        mode="remove",
-        task=Config.USERS.remove,
-        item=user,
-        config_list=Config.USERS,
-        message_id=Config.USERS_MESSAGE_ID,
-    ):
-        return await message.reply(err, del_in=5)
-    await message.reply("User Removed from Authorised List.", del_in=5)
-
-
-@bot.add_cmd(cmd="addchat")
-async def add_chat(bot, message):
+@bot.add_cmd(cmd=["addchat", "delchat"])
+async def add_or_remove_chat(bot, message):
     chat, err = extract_chat(message)
     if err:
         return await message.reply(err)
+
+    if message.cmd == "addchat":
+        mode = "add"
+        task = Config.CHATS.append
+        action = "Added to"
+    else:
+        mode = "remove"
+        task = Config.CHATS.remove
+        action = "Removed from"
+
     if err := await add_or_remove(
-        mode="add",
-        task=Config.CHATS.append,
+        mode=mode,
+        task=task,
         item=chat,
         config_list=Config.CHATS,
         message_id=Config.AUTO_DL_MESSAGE_ID,
     ):
         return await message.reply(err, del_in=5)
     await message.reply(
-        f"<b>{message.chat.title or message.chat.first_name}</b> Added to Authorised List.",
+        f"<b>{message.chat.title or message.chat.first_name}</b> {action} Authorised List.",
         del_in=5,
     )
 
 
-@bot.add_cmd(cmd="delchat")
-async def add_chat(bot, message):
-    chat, err = extract_chat(message)
+@bot.add_cmd(cmd=["block", "unblock"])
+async def block_or_unblock(bot, message):
+    user, err = extract_user(message)
     if err:
         return await message.reply(err)
+
+    if message.cmd == "block":
+        mode = "add"
+        task = Config.BLOCKED_USERS.append
+        action = "Added to"
+    else:
+        mode = "remove"
+        task = Config.BLOCKED_USERS.remove
+        action = "Removed from"
+
     if err := await add_or_remove(
-        mode="remove",
-        task=Config.CHATS.remove,
-        item=chat,
-        config_list=Config.CHATS,
-        message_id=Config.AUTO_DL_MESSAGE_ID,
+        mode=mode,
+        task=task,
+        item=user,
+        config_list=Config.BLOCKED_USERS,
+        message_id=Config.BLOCKED_USERS_MESSAGE_ID,
+    ):
+        return await message.reply(err, del_in=5)
+    await message.reply(f"User {action} Ban List.", del_in=5)
+
+
+@bot.add_cmd(cmd=["enable", "disable"])
+async def auto_dl_trigger(bot, message):
+    if not Config.DISABLED_CHATS_MESSAGE_ID:
+        return await message.reply("You haven't added `DISABLED_CHATS_ID` Var, Add it.")
+
+    if message.cmd == "disable":
+        mode = "add"
+        task = Config.DISABLED_CHATS.append
+        action = "Added to"
+    else:
+        mode = "remove"
+        task = Config.DISABLED_CHATS.remove
+        action = "Removed from"
+
+    if err := await add_or_remove(
+        mode=mode,
+        task=task,
+        item=message.chat.id,
+        config_list=Config.DISABLED_CHATS,
+        message_id=Config.DISABLED_CHATS_MESSAGE_ID,
     ):
         return await message.reply(err, del_in=5)
     await message.reply(
-        f"<b>{message.chat.title or message.chat.first_name}</b> Added Removed from Authorised List.",
+        f"<b>{message.chat.title or message.chat.first_name}</b> {action} Disabled List.",
         del_in=5,
     )
-
-
-@bot.add_cmd(cmd="block")
-async def add_sudo(bot, message):
-    user, err = extract_user(message)
-    if err:
-        return await message.reply(err)
-    if err := await add_or_remove(
-        mode="add",
-        task=Config.BLOCKED_USERS.append,
-        item=user,
-        config_list=Config.BLOCKED_USERS,
-        message_id=Config.BLOCKED_USERS_MESSAGE_ID,
-    ):
-        return await message.reply(err, del_in=5)
-    await message.reply("User Added to Ban List.", del_in=5)
-
-
-@bot.add_cmd(cmd="unblock")
-async def add_sudo(bot, message):
-    user, err = extract_user(message)
-    if err:
-        return await message.reply(err)
-    if err := await add_or_remove(
-        mode="remove",
-        task=Config.BLOCKED_USERS.remove,
-        item=user,
-        config_list=Config.BLOCKED_USERS,
-        message_id=Config.BLOCKED_USERS_MESSAGE_ID,
-    ):
-        return await message.reply(err, del_in=5)
-    await message.reply("User Removed from Ban List.", del_in=5)

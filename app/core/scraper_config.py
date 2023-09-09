@@ -1,27 +1,35 @@
 import shutil
+from enum import Enum, auto
+
+
+class MediaType(Enum):
+    PHOTO = auto()
+    VIDEO = auto()
+    GROUP = auto()
+    GIF = auto()
+    MESSAGE = auto()
 
 
 class ScraperConfig:
     def __init__(self):
+        self.dump = False
+        self.in_dump = False
         self.path = ""
-        self.link = ""
+        self.media = ""
         self.caption = ""
         self.caption_url = ""
         self.thumb = None
+        self.type = None
         self.success = False
-        self.photo = False
-        self.video = False
-        self.group = False
-        self.gif = False
 
-    def set_sauce(self):
-        self.caption_url = f"\n\n<a href='{self.query_url}'>Sauce</a>"
+    def set_sauce(self, url):
+        self.caption_url = f"\n\n<a href='{url}'>Sauce</a>"
 
     @classmethod
     async def start(cls, url):
         obj = cls(url=url)
         obj.query_url = url
-        obj.set_sauce()
+        obj.set_sauce(url)
         await obj.download_or_extract()
         if obj.success:
             return obj

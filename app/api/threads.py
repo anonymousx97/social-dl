@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 from app.core import aiohttp_tools
-from app.core.scraper_config import ScraperConfig
+from app.core.scraper_config import MediaType, ScraperConfig
 
 
 class Threads(ScraperConfig):
@@ -25,9 +25,11 @@ class Threads(ScraperConfig):
 
         if div := soup.find("div", {"class": "SingleInnerMediaContainer"}):
             if video := div.find("video"):
-                self.link = video.find("source").get("src")
-                self.video = self.success = True
+                self.media = video.find("source").get("src")
+                self.success = True
+                self.type = MediaType.VIDEO
 
             elif image := div.find("img", {"class": "img"}):
-                self.link = image.get("src")
-                self.photo = self.success = True
+                self.media = image.get("src")
+                self.success = True
+                self.type = MediaType.PHOTO

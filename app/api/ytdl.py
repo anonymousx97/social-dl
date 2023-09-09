@@ -4,7 +4,7 @@ import time
 
 import yt_dlp
 
-from app.core.scraper_config import ScraperConfig
+from app.core.scraper_config import MediaType, ScraperConfig
 from app.core.shell import take_ss
 
 
@@ -27,49 +27,53 @@ class YT_DL(ScraperConfig):
         self.url = url
         self.path = "downloads/" + str(time.time())
         self.video_path = self.path + "/v.mp4"
-        self._opts = {
+        self.type = MediaType.VIDEO
+        _opts = {
             "outtmpl": self.video_path,
             "ignoreerrors": True,
             "ignore_no_formats_error": True,
             "quiet": True,
             "logger": FakeLogger(),
             "noplaylist": True,
+            "format": self.get_format(),
         }
-        self.set_format()
+        self.yt_obj = yt_dlp.YoutubeDL(_opts)
 
     async def download_or_extract(self):
-        if self.check_url():
+        info = await self.get_info()
+        if not info:
             return
-        with yt_dlp.YoutubeDL(self._opts) as yt_obj:
-            info = await asyncio.to_thread(
-                yt_obj.extract_info, self.url, download=False
+
+        await asyncio.to_thread(self.yt_obj.download, self.url)
+
+        if "youtu" in self.url:
+            self.caption = (
+                f"""__{info.get("channel","")}__:\n**{info.get("title","")}**"""
             )
 
-            if not info or info.get("duration", 0) >= 300:
-                return
-
-            await asyncio.to_thread(yt_obj.download, self.url)
-
-            if "youtu" in self.url:
-                self.caption = (
-                    f"""__{info.get("channel","")}__:\n**{info.get("title","")}**"""
-                )
-
         if os.path.isfile(self.video_path):
-            self.link = self.video_path
+            self.media = self.video_path
             self.thumb = await take_ss(self.video_path, path=self.path)
-            self.video = self.success = True
+            self.success = True
 
-    def check_url(self):
-        if "youtu" in self.url and (
-            "/live" in self.url or os.path.basename(self.url).startswith("@")
+    async def get_info(self):
+        if os.path.basename(self.url).startswith("@") or "/hashtag/" in self.url:
+            return
+        info = await asyncio.to_thread(
+            self.yt_obj.extract_info, self.url, download=False
+        )
+        if (
+            not info
+            or info.get("live_status") == "is_live"
+            or info.get("duration", 0) >= 180
         ):
-            return 1
+            return
+        return info
 
-    def set_format(self):
+    def get_format(self):
         if "/shorts" in self.url:
-            self._opts["format"] = "bv[ext=mp4][res=720]+ba[ext=m4a]/b[ext=mp4]"
+            return "bv[ext=mp4][res=720]+ba[ext=m4a]/b[ext=mp4]"
         elif "youtu" in self.url:
-            self._opts["format"] = "bv[ext=mp4][res=480]+ba[ext=m4a]/b[ext=mp4]"
+            return "bv[ext=mp4][res=480]+ba[ext=m4a]/b[ext=mp4]"
         else:
-            self._opts["format"] = "b[ext=mp4]"
+            return "b[ext=mp4]"

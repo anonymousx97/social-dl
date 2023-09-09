@@ -3,7 +3,7 @@ import traceback
 
 from app import Config, bot
 from app.core import filters
-from app.core.MediaHandler import ExtractAndSendMedia
+from app.core.media_handler import MediaHandler
 from app.core.message import Message
 
 
@@ -12,8 +12,8 @@ async def dl(bot, message):
     reply = await bot.send_message(
         chat_id=message.chat.id, text="`trying to download...`"
     )
-    coro = ExtractAndSendMedia.process(message)
-    task = asyncio.Task(coro, name=message.task_id)
+    coro = MediaHandler.process(message)
+    task = asyncio.Task(coro, name=reply.task_id)
     media = await task
     if media.exceptions:
         exceptions = "\n".join(media.exceptions)
@@ -49,6 +49,7 @@ async def cmd_dispatcher(bot, message):
         )
 
 
+@bot.on_message(filters.allowed_cmd_filter)
 @bot.on_message(filters.chat_filter)
 async def dl_dispatcher(bot, message):
     message = Message.parse_message(message)

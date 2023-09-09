@@ -1,9 +1,11 @@
 import os
+import re
 import time
 from urllib.parse import urlparse
 
-from app.core import aiohttp_tools, shell
-from app.core.scraper_config import ScraperConfig
+from app.core import shell
+from app.core.aiohttp_tools import get_json, get_type
+from app.core.scraper_config import MediaType, ScraperConfig
 
 
 class Reddit(ScraperConfig):
@@ -16,9 +18,7 @@ class Reddit(ScraperConfig):
         headers = {
             "user-agent": "Mozilla/5.0 (Macintosh; PPC Mac OS X 10_8_7 rv:5.0; en-US) AppleWebKit/533.31.5 (KHTML, like Gecko) Version/4.0 Safari/533.31.5"
         }
-        response = await aiohttp_tools.get_json(
-            url=self.url, headers=headers, json_=True
-        )
+        response = await get_json(url=self.url, headers=headers, json_=True)
         if not response:
             return
 
@@ -31,36 +31,38 @@ class Reddit(ScraperConfig):
             f"""__{json_["subreddit_name_prefixed"]}:__\n**{json_["title"]}**"""
         )
 
-        is_vid, is_gallery = json_.get("is_video"), json_.get("is_gallery")
+        self.thumb = json_.get("thumbnail")
 
-        if is_vid:
-            self.path = "downloads/" + str(time.time())
-            os.makedirs(self.path)
-            self.link = f"{self.path}/v.mp4"
-            vid_url = json_["secure_media"]["reddit_video"]["hls_url"]
-            await shell.run_shell_cmd(
-                f'ffmpeg -hide_banner -loglevel error -i "{vid_url.strip()}" -c copy {self.link}'
-            )
-            self.thumb = await shell.take_ss(video=self.link, path=self.path)
-            self.video = self.success = True
-
-        elif is_gallery:
-            self.link = [
+        if json_.get("is_gallery"):
+            self.media = [
                 val["s"].get("u", val["s"].get("gif")).replace("preview", "i")
                 for val in json_["media_metadata"].values()
             ]
-            self.group = self.success = True
+            self.success = True
+            self.type = MediaType.GROUP
+            return
 
-        else:
-            self.link = (
-                json_.get("preview", {})
-                .get("reddit_video_preview", {})
-                .get("fallback_url", json_.get("url_overridden_by_dest", ""))
-                .strip()
+        hls = re.findall(r"'hls_url'\s*:\s*'([^']*)'", str(json_))
+
+        if hls:
+            self.path = "downloads/" + str(time.time())
+            os.makedirs(self.path)
+            self.media = f"{self.path}/v.mp4"
+            vid_url = hls[0]
+            await shell.run_shell_cmd(
+                f'ffmpeg -hide_banner -loglevel error -i "{vid_url.strip()}" -c copy {self.media}'
             )
-            if not self.link:
-                return
-            if self.link.endswith(".gif"):
-                self.gif = self.success = True
-            else:
-                self.photo = self.success = True
+            self.thumb = await shell.take_ss(video=self.media, path=self.path)
+            self.success = True
+            self.type = (
+                MediaType.VIDEO
+                if await shell.check_audio(self.media)
+                else MediaType.GIF
+            )
+            return
+
+        generic = json_.get("url_overridden_by_dest", "").strip()
+        self.type = get_type(generic)
+        if self.type:
+            self.media = generic
+            self.success = True
