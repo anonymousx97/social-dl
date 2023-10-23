@@ -77,7 +77,7 @@
      Now send another message but this time include your id in the list: [12345678]
      
      * Copy this message's link and add the message id in USERS_MESSAGE_ID var
-    </details>
+     </details>
    * Trigger : Trigger to access bot.
    * Dev Mode: Set to 1 if you want access to exec, sh, shell commands.
      > These commands can be dangerous if used carelessly, Turn on at your own risk.
