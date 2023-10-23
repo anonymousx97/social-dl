@@ -4,7 +4,7 @@ import time
 from urllib.parse import urlparse
 
 from app.core import shell
-from app.core.aiohttp_tools import get_json, get_type
+from app.core import aiohttp_tools
 from app.core.scraper_config import MediaType, ScraperConfig
 
 
@@ -12,20 +12,15 @@ class Reddit(ScraperConfig):
     def __init__(self, url):
         super().__init__()
         parsed_url = urlparse(url)
-        self.url: str = f"https://www.reddit.com{parsed_url.path}.json?limit=1"
+        self.url: str = f"https://www.reddit.com{parsed_url.path}"
 
     async def download_or_extract(self) -> None:
-        headers: dict = {
-            "user-agent": "Mozilla/5.0 (Macintosh; PPC Mac OS X 10_8_7 rv:5.0; en-US) AppleWebKit/533.31.5 (KHTML, like Gecko) Version/4.0 Safari/533.31.5"
-        }
-        response: dict | None = await get_json(
-            url=self.url, headers=headers, json_=True
-        )
-        if not response:
+        json_data = await self.get_data()
+        if not json_data:
             return
 
         try:
-            json_: dict = response[0]["data"]["children"][0]["data"]
+            json_: dict = json_data[0]["data"]["children"][0]["data"]
         except BaseException:
             return
 
@@ -64,7 +59,24 @@ class Reddit(ScraperConfig):
             return
 
         generic: str = json_.get("url_overridden_by_dest", "").strip()
-        self.type: MediaType = get_type(generic)
+        self.type: MediaType = aiohttp_tools.get_type(generic)
         if self.type:
             self.media: str = generic
             self.success = True
+
+    async def get_data(self) -> dict | None:
+        headers: dict = {
+            "user-agent": "Mozilla/5.0 (Macintosh; PPC Mac OS X 10_8_7 rv:5.0; en-US) AppleWebKit/533.31.5 (KHTML, like Gecko) Version/4.0 Safari/533.31.5"
+        }
+        response: dict | None = await aiohttp_tools.get_json(
+            url=f"{self.url}.json?limit=1", headers=headers, json_=True
+        )
+        if not response:
+            raw_url = (await aiohttp_tools.SESSION.get(self.url)).url  # fmt : skip
+            parsed_url = urlparse(f"{raw_url}")
+            url: str = f"https://www.reddit.com{parsed_url.path}"
+
+            response: dict | None = await aiohttp_tools.get_json(
+                url=f"{url}.json?limit=1", headers=headers, json_=True
+            )
+        return response
