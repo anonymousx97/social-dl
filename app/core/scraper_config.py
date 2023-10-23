@@ -1,5 +1,7 @@
+import json
 import shutil
 from enum import Enum, auto
+from io import BytesIO
 
 
 class MediaType(Enum):
@@ -11,22 +13,25 @@ class MediaType(Enum):
 
 
 class ScraperConfig:
-    def __init__(self):
-        self.dump = False
-        self.in_dump = False
-        self.path = ""
-        self.media = ""
-        self.caption = ""
-        self.caption_url = ""
-        self.thumb = None
-        self.type = None
-        self.success = False
+    def __init__(self) -> None:
+        self.dump: bool = False
+        self.in_dump: bool = False
+        self.path: str = ""
+        self.media: str | BytesIO = ""
+        self.caption: str = ""
+        self.caption_url: str = ""
+        self.thumb: str | None | BytesIO = None
+        self.type: None | MediaType = None
+        self.success: bool = False
 
-    def set_sauce(self, url):
+    def __str__(self):
+        return json.dumps(self.__dict__, indent=4, ensure_ascii=False, default=str)
+
+    def set_sauce(self, url: str) -> None:
         self.caption_url = f"\n\n<a href='{url}'>Sauce</a>"
 
     @classmethod
-    async def start(cls, url):
+    async def start(cls, url: str) -> "ScraperConfig":
         obj = cls(url=url)
         obj.query_url = url
         obj.set_sauce(url)
@@ -34,6 +39,6 @@ class ScraperConfig:
         if obj.success:
             return obj
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         if self.path:
             shutil.rmtree(self.path, ignore_errors=True)

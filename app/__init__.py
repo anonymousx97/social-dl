@@ -4,11 +4,14 @@ from dotenv import load_dotenv
 
 load_dotenv("config.env")
 
-from .config import Config
-from .core.client import BOT
+# isort: skip
+from .config import Config  # noqa
+from app.core.message import Message  # noqa
+from .core.client import BOT  # noqa
 
-if not os.environ.get("TERMUX_APK_RELEASE"):
-    import uvloop
+if "com.termux" not in os.environ.get("PATH", ""):
+    import uvloop  # isort:skip
+
     uvloop.install()
 
 bot = BOT()

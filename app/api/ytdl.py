@@ -21,14 +21,14 @@ class FakeLogger(object):
         pass
 
 
-class YT_DL(ScraperConfig):
+class YouTubeDL(ScraperConfig):
     def __init__(self, url):
         super().__init__()
-        self.url = url
-        self.path = "downloads/" + str(time.time())
-        self.video_path = self.path + "/v.mp4"
+        self.url: str = url
+        self.path: str = "downloads/" + str(time.time())
+        self.video_path: str = self.path + "/v.mp4"
         self.type = MediaType.VIDEO
-        _opts = {
+        _opts: dict = {
             "outtmpl": self.video_path,
             "ignoreerrors": True,
             "ignore_no_formats_error": True,
@@ -37,17 +37,17 @@ class YT_DL(ScraperConfig):
             "noplaylist": True,
             "format": self.get_format(),
         }
-        self.yt_obj = yt_dlp.YoutubeDL(_opts)
+        self.yt_obj: yt_dlp.YoutubeDL = yt_dlp.YoutubeDL(_opts)
 
     async def download_or_extract(self):
-        info = await self.get_info()
+        info: dict = await self.get_info()
         if not info:
             return
 
         await asyncio.to_thread(self.yt_obj.download, self.url)
 
         if "youtu" in self.url:
-            self.caption = (
+            self.caption: str = (
                 f"""__{info.get("channel","")}__:\n**{info.get("title","")}**"""
             )
 
@@ -56,7 +56,7 @@ class YT_DL(ScraperConfig):
             self.thumb = await take_ss(self.video_path, path=self.path)
             self.success = True
 
-    async def get_info(self):
+    async def get_info(self) -> None | dict:
         if os.path.basename(self.url).startswith("@") or "/hashtag/" in self.url:
             return
         info = await asyncio.to_thread(
@@ -70,7 +70,7 @@ class YT_DL(ScraperConfig):
             return
         return info
 
-    def get_format(self):
+    def get_format(self) -> str:
         if "/shorts" in self.url:
             return "bv[ext=mp4][res=720]+ba[ext=m4a]/b[ext=mp4]"
         elif "youtu" in self.url:

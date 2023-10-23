@@ -1,4 +1,3 @@
-import base64
 import glob
 import importlib
 import json
@@ -7,12 +6,24 @@ import sys
 from functools import wraps
 from io import BytesIO
 
-from pyrogram import Client, idle
+from pyrogram import Client, filters, idle
 from pyrogram.enums import ParseMode
+from pyrogram.types import Message as Msg
 
 from app import Config
 from app.core import aiohttp_tools
+from app.core.conversation import Conversation
 from app.core.message import Message
+
+
+async def import_modules():
+    for py_module in glob.glob(pathname="app/**/*.py", recursive=True):
+        name = os.path.splitext(py_module)[0]
+        py_name = name.replace("/", ".")
+        try:
+            importlib.import_module(py_name)
+        except Exception as e:
+            print(e)
 
 
 class BOT(Client):
@@ -32,7 +43,8 @@ class BOT(Client):
             max_concurrent_transmissions=2,
         )
 
-    def add_cmd(self, cmd, trigger=Config.TRIGGER):  # Custom triggers To do
+    @staticmethod
+    def add_cmd(cmd: str):
         def the_decorator(func):
             @wraps(func)
             def wrapper():
@@ -47,9 +59,22 @@ class BOT(Client):
 
         return the_decorator
 
-    async def boot(self):
+    @staticmethod
+    async def get_response(
+        chat_id: int, filters: filters.Filter = None, timeout: int = 8
+    ) -> Message | None:
+        try:
+            async with Conversation(
+                chat_id=chat_id, filters=filters, timeout=timeout
+            ) as convo:
+                response: Message | None = await convo.get_response()
+                return response
+        except Conversation.TimeOutError:
+            return
+
+    async def boot(self) -> None:
         await super().start()
-        await self.import_modules()
+        await import_modules()
         await self.set_filter_list()
         await aiohttp_tools.session_switch()
         await self.edit_restart_msg()
@@ -58,7 +83,7 @@ class BOT(Client):
         await idle()
         await aiohttp_tools.session_switch()
 
-    async def edit_restart_msg(self):
+    async def edit_restart_msg(self) -> None:
         restart_msg = int(os.environ.get("RESTART_MSG", 0))
         restart_chat = int(os.environ.get("RESTART_CHAT", 0))
         if restart_msg and restart_chat:
@@ -71,24 +96,26 @@ class BOT(Client):
             os.environ.pop("RESTART_MSG", "")
             os.environ.pop("RESTART_CHAT", "")
 
-    async def import_modules(self):
-        for py_module in glob.glob("app/**/*.py", recursive=True):
-            name = os.path.splitext(py_module)[0]
-            py_name = name.replace("/", ".")
-            importlib.import_module(py_name)
-
     async def log(
         self,
         text="",
         traceback="",
         chat=None,
         func=None,
+        message: Message | Msg | None = None,
         name="log.txt",
         disable_web_page_preview=True,
         parse_mode=ParseMode.HTML,
-    ):
+    ) -> Message | Msg:
+        if message:
+            return (await message.copy(chat_id=Config.LOG_CHAT))  # fmt: skip
         if traceback:
-            text = f"#Traceback\n<b>Function:</b> {func}\n<b>Chat:</b> {chat}\n<b>Traceback:</b>\n<code>{traceback}</code>"
+            text = f"""
+#Traceback
+<b>Function:</b> {func}
+<b>Chat:</b> {chat}
+<b>Traceback:</b>
+<code>{traceback}</code>"""
         return await self.send_message(
             chat_id=Config.LOG_CHAT,
             text=text,
@@ -97,12 +124,26 @@ class BOT(Client):
             parse_mode=parse_mode,
         )
 
-    async def restart(self):
+    async def restart(self, hard=False) -> None:
         await aiohttp_tools.session_switch()
         await super().stop(block=False)
+        if hard:
+            os.execl("/bin/bash", "/bin/bash", "run")
         os.execl(sys.executable, sys.executable, "-m", "app")
-
     SECRET_API = base64.b64decode("YS56dG9yci5tZS9hcGkvaW5zdGE=").decode("utf-8")
+
+    async def send_message(
+        self, chat_id: int | str, text, name: str = "output.txt", **kwargs
+    ) -> Message | Msg:
+        text = str(text)
+        if len(text) < 4096:
+            return Message.parse_message(
+                (await super().send_message(chat_id=chat_id, text=text, **kwargs))
+            )
+        doc = BytesIO(bytes(text, encoding="utf-8"))
+        doc.name = name
+        kwargs.pop("disable_web_page_preview", "")
+        return await super().send_document(chat_id=chat_id, document=doc, **kwargs)
 
     async def set_filter_list(self):
         chats_id = Config.AUTO_DL_MESSAGE_ID
@@ -126,13 +167,3 @@ class BOT(Client):
             Config.DISABLED_CHATS = json.loads(
                 (await super().get_messages(Config.LOG_CHAT, disabled)).text
             )
-
-    async def send_message(self, chat_id, text, name: str = "output.txt", **kwargs):
-        if len(str(text)) < 4096:
-            return Message.parse_message(
-                (await super().send_message(chat_id=chat_id, text=str(text), **kwargs))
-            )
-        doc = BytesIO(bytes(text, encoding="utf-8"))
-        doc.name = name
-        kwargs.pop("disable_web_page_preview", "")
-        return await super().send_document(chat_id=chat_id, document=doc, **kwargs)

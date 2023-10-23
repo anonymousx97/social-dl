@@ -2,36 +2,38 @@ import os
 
 from pyrogram.enums import ChatType
 from pyrogram.errors import BadRequest
-from pyrogram.types import Message
 
-from app import bot
+from app import Config, Message, bot
 
 # Delete replied and command message
 
 
 @bot.add_cmd(cmd="del")
-async def delete_message(bot, message: Message):
+async def delete_message(bot: bot, message: Message) -> None:
     await message.delete(reply=True)
 
 
 # Delete Multiple messages from replied to command.
 @bot.add_cmd(cmd="purge")
-async def purge_(bot, message: Message):
-    reply = message.replied
-    if not reply:
+async def purge_(bot: bot, message: Message) -> None | Message:
+    start_message: int = message.reply_id
+    if not start_message:
         return await message.reply("reply to a message")
-    start_message = reply.id
-    end_message = message.id
-    messages = [end_message] + [i for i in range(int(start_message), int(end_message))]
+    end_message: int = message.id
+    messages: list[int] = [
+        end_message,
+        *[i for i in range(int(start_message), int(end_message))],
+    ]
     await bot.delete_messages(
         chat_id=message.chat.id, message_ids=messages, revoke=True
     )
 
 
 @bot.add_cmd(cmd="ids")
-async def get_ids(bot, message):
-    if reply := message.replied:
-        ids = ""
+async def get_ids(bot: bot, message: Message) -> None:
+    reply: Message = message.replied
+    if reply:
+        ids: str = ""
         reply_forward = reply.forward_from_chat
         reply_user = reply.from_user
         ids += f"Chat : `{reply.chat.id}`\n"
@@ -40,13 +42,13 @@ async def get_ids(bot, message):
         if reply_user:
             ids += f"User : {reply.from_user.id}"
     else:
-        ids = f"Chat :`{message.chat.id}`"
+        ids: str = f"Chat :`{message.chat.id}`"
     await message.reply(ids)
 
 
 @bot.add_cmd(cmd="join")
-async def join_chat(bot, message):
-    chat = message.input
+async def join_chat(bot: bot, message: Message) -> Message:
+    chat: str = message.input
     try:
         await bot.join_chat(chat)
     except (KeyError, BadRequest):
@@ -58,11 +60,16 @@ async def join_chat(bot, message):
 
 
 @bot.add_cmd(cmd="leave")
-async def leave_chat(bot, message):
+async def leave_chat(bot: bot, message: Message) -> None:
     if message.input:
         chat = message.input
     else:
         chat = message.chat.id
+        await message.reply(
+            f"Leaving current chat in 5\nReply with `{Config.TRIGGER}c` to cancel",
+            del_in=5,
+            block=True,
+        )
     try:
         await bot.leave_chat(chat)
     except Exception as e:
@@ -70,8 +77,8 @@ async def leave_chat(bot, message):
 
 
 @bot.add_cmd(cmd="reply")
-async def reply(bot, message):
-    text = message.input
+async def reply(bot: bot, message: Message) -> None:
+    text: str = message.input
     await bot.send_message(
         chat_id=message.chat.id,
         text=text,

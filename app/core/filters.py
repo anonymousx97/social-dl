@@ -1,14 +1,15 @@
 from urllib.parse import urlparse
 
 from pyrogram import filters as _filters
+from pyrogram.types import Message
 
 from app import Config
 from app.core.media_handler import url_map
 
 
-def check_for_urls(text_list):
+def check_for_urls(text_list: list):
     for link in text_list:
-        if match := url_map.get(urlparse(link).netloc):
+        if url_map.get(urlparse(link).netloc):
             return True
         else:
             for key in url_map.keys():
@@ -16,7 +17,7 @@ def check_for_urls(text_list):
                     return True
 
 
-def dynamic_chat_filter(_, __, message, cmd=False):
+def dynamic_chat_filter(_, __, message: Message, cmd=False) -> bool:
     if (
         not message.text
         or (not message.text.startswith("https") and not cmd)
@@ -34,17 +35,16 @@ def dynamic_chat_filter(_, __, message, cmd=False):
     return bool(url_check)
 
 
-def dynamic_allowed_list(_, __, message):
+def dynamic_allowed_list(_, __, message: Message) -> bool:
     if not dynamic_chat_filter(_, __, message, cmd=True):
         return False
-    start_str = message.text.split(maxsplit=1)[0]
-    cmd = start_str.replace("/", "", 1)
-    cmd_check = cmd in {"download", "dl", "down"}
+    cmd = message.text.split(maxsplit=1)[0]
+    cmd_check = cmd in {"/download", "/dl", "/down"}
     reaction_check = not message.reactions
     return bool(cmd_check and reaction_check)
 
 
-def dynamic_cmd_filter(_, __, message):
+def dynamic_cmd_filter(_, __, message: Message) -> bool:
     if (
         not message.text
         or not message.text.startswith(Config.TRIGGER)
@@ -63,3 +63,7 @@ def dynamic_cmd_filter(_, __, message):
 chat_filter = _filters.create(dynamic_chat_filter)
 user_filter = _filters.create(dynamic_cmd_filter)
 allowed_cmd_filter = _filters.create(dynamic_allowed_list)
+convo_filter = _filters.create(
+    lambda _, __, message: (message.chat.id in Config.CONVO_DICT)
+    and (not message.reactions)
+)

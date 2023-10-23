@@ -1,9 +1,13 @@
+from typing import Callable
+
 from pyrogram.errors import MessageNotModified
 
-from app import Config, bot
+from app import Config, Message, bot
 
 
-async def add_or_remove(mode, task, item, config_list, message_id):
+async def add_or_remove(
+    mode: str, task: Callable, item: int, config_list: list, message_id: int
+) -> None | str:
     err = None
     if item in config_list and mode == "add":
         return "ID Already in List"
@@ -21,7 +25,7 @@ async def add_or_remove(mode, task, item, config_list, message_id):
     return err
 
 
-def extract_user(message):
+def extract_user(message: Message) -> tuple:
     user, err = message.input.strip(), None
     if not Config.USERS_MESSAGE_ID:
         return user, "You haven't added `USERS_MESSAGE_ID` Var, Add it."
@@ -36,12 +40,12 @@ def extract_user(message):
     return user, err
 
 
-def extract_chat(message):
+def extract_chat(message: Message) -> tuple:
     chat, err = message.input.strip() or message.chat.id, None
     if not Config.AUTO_DL_MESSAGE_ID:
-        return user, "You haven't added `AUTO_DL_MESSAGE_ID` Var, Add it."
+        return chat, "You haven't added `AUTO_DL_MESSAGE_ID` Var, Add it."
     if not chat:
-        return user, "Unable to Extract Chat IDs. Try again."
+        return chat, "Unable to Extract Chat IDs. Try again."
     try:
         chat = int(chat)
     except ValueError:
@@ -50,19 +54,19 @@ def extract_chat(message):
 
 
 @bot.add_cmd(cmd=["addsudo", "delsudo"])
-async def add_or_remove_sudo(bot, message):
+async def add_or_remove_sudo(bot: bot, message: Message) -> Message | None:
     user, err = extract_user(message)
     if err:
         return await message.reply(err)
 
     if message.cmd == "addsudo":
-        mode = "add"
-        task = Config.USERS.append
-        action = "Added to"
+        mode: str = "add"
+        task: Callable = Config.USERS.append
+        action: str = "Added to"
     else:
-        mode = "remove"
-        task = Config.USERS.remove
-        action = "Removed from"
+        mode: str = "remove"
+        task: Callable = Config.USERS.remove
+        action: str = "Removed from"
 
     if err := await add_or_remove(
         mode=mode,
@@ -76,19 +80,19 @@ async def add_or_remove_sudo(bot, message):
 
 
 @bot.add_cmd(cmd=["addchat", "delchat"])
-async def add_or_remove_chat(bot, message):
+async def add_or_remove_chat(bot: bot, message: Message) -> Message | None:
     chat, err = extract_chat(message)
     if err:
         return await message.reply(err)
 
     if message.cmd == "addchat":
-        mode = "add"
-        task = Config.CHATS.append
-        action = "Added to"
+        mode: str = "add"
+        task: Callable = Config.CHATS.append
+        action: str = "Added to"
     else:
-        mode = "remove"
-        task = Config.CHATS.remove
-        action = "Removed from"
+        mode: str = "remove"
+        task: Callable = Config.CHATS.remove
+        action: str = "Removed from"
 
     if err := await add_or_remove(
         mode=mode,
@@ -105,19 +109,19 @@ async def add_or_remove_chat(bot, message):
 
 
 @bot.add_cmd(cmd=["block", "unblock"])
-async def block_or_unblock(bot, message):
+async def block_or_unblock(bot: bot, message: Message) -> Message | None:
     user, err = extract_user(message)
     if err:
         return await message.reply(err)
 
     if message.cmd == "block":
-        mode = "add"
-        task = Config.BLOCKED_USERS.append
-        action = "Added to"
+        mode: str = "add"
+        task: Callable = Config.BLOCKED_USERS.append
+        action: str = "Added to"
     else:
-        mode = "remove"
-        task = Config.BLOCKED_USERS.remove
-        action = "Removed from"
+        mode: str = "remove"
+        task: Callable = Config.BLOCKED_USERS.remove
+        action: str = "Removed from"
 
     if err := await add_or_remove(
         mode=mode,
@@ -131,18 +135,18 @@ async def block_or_unblock(bot, message):
 
 
 @bot.add_cmd(cmd=["enable", "disable"])
-async def auto_dl_trigger(bot, message):
+async def auto_dl_trigger(bot: bot, message: Message) -> Message | None:
     if not Config.DISABLED_CHATS_MESSAGE_ID:
         return await message.reply("You haven't added `DISABLED_CHATS_ID` Var, Add it.")
 
     if message.cmd == "disable":
-        mode = "add"
-        task = Config.DISABLED_CHATS.append
-        action = "Added to"
+        mode: str = "add"
+        task: Callable = Config.DISABLED_CHATS.append
+        action: str = "Added to"
     else:
-        mode = "remove"
-        task = Config.DISABLED_CHATS.remove
-        action = "Removed from"
+        mode: str = "remove"
+        task: Callable = Config.DISABLED_CHATS.remove
+        action: str = "Removed from"
 
     if err := await add_or_remove(
         mode=mode,

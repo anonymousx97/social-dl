@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 import yt_dlp
 
-from app import bot
+from app import Message, bot
 from app.api.ytdl import FakeLogger
 from app.core.aiohttp_tools import in_memory_dl
 
@@ -21,43 +21,41 @@ domains = [
 
 
 @bot.add_cmd(cmd="song")
-async def song_dl(bot, message):
+async def song_dl(bot: bot, message: Message) -> None | Message:
     reply_query = None
-    audio_file = None
-    artist = None
     if message.replied:
-        for link in message.replied.text.split():
+        for link in message.replied.text_list:
             if urlparse(link).netloc in domains:
                 reply_query = link
                 break
     query = reply_query or message.flt_input
     if not query:
         return await message.reply("Give a song name or link to download.")
-    response = await message.reply("Searching....")
-    dl_path = f"downloads/{time()}/"
-    query_or_search = query if query.startswith("http") else f"ytsearch:{query}"
+    response: Message = await message.reply("Searching....")
+    dl_path: str = f"downloads/{time()}/"
+    query_or_search: str = query if query.startswith("http") else f"ytsearch:{query}"
     if "-m" in message.flags:
-        aformat = "mp3"
+        a_format = "mp3"
     else:
-        aformat = "opus"
+        a_format = "opus"
     yt_opts = {
         "logger": FakeLogger(),
         "outtmpl": dl_path + "%(title)s.%(ext)s",
         "format": "bestaudio",
         "postprocessors": [
-            {"key": "FFmpegExtractAudio", "preferredcodec": aformat},
+            {"key": "FFmpegExtractAudio", "preferredcodec": a_format},
             {"key": "FFmpegMetadata"},
             {"key": "EmbedThumbnail"},
         ],
     }
-    ytdl = yt_dlp.YoutubeDL(yt_opts)
-    yt_info = await asyncio.to_thread(ytdl.extract_info, query_or_search)
+    ytdl: yt_dlp.YoutubeDL = yt_dlp.YoutubeDL(yt_opts)
+    yt_info: dict = await asyncio.to_thread(ytdl.extract_info, query_or_search)
     if not query_or_search.startswith("http"):
-        yt_info = yt_info["entries"][0]
-    duration = yt_info["duration"]
-    artist = yt_info["channel"]
+        yt_info: str = yt_info["entries"][0]
+    duration: int = yt_info["duration"]
+    artist: str = yt_info["channel"]
     thumb = await in_memory_dl(yt_info["thumbnail"])
-    down_path = glob.glob(dl_path + "*")
+    down_path: list = glob.glob(dl_path + "*")
     if not down_path:
         return await response.edit("Not found")
     await response.edit("Uploading....")
