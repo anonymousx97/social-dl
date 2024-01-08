@@ -1,8 +1,6 @@
+from app import LOGGER, bot
+
 if __name__ == "__main__":
-    import tracemalloc
-
-    tracemalloc.start()
-
-    from app import bot
-
     bot.run(bot.boot())
+else:
+    LOGGER.error("Wrong Start Command.\nUse 'python -m app'")
