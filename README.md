@@ -60,8 +60,7 @@
      > It will ask you to choose pyrogram version. Select 2.
 
    * LOG_CHAT: Create A Log Channel and add it's id along with -100 at the beginning.
-   * API_KEYS: Optional Instagram scrapping keys from <a href=https://webscraping.ai/>API. </a> recommended to add if you wanna reduce Instagram dl failures.
-     
+
    * <details>
      <summary>Tap here for The Message IDs : </summary>
       Send 2 messages in your log channel, message text is an empty list : []

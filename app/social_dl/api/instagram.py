@@ -6,29 +6,28 @@ from app.social_dl.scraper_config import ScraperConfig
 from app.utils import aiohttp_tools as aio
 from app.utils.media_helper import MediaType, get_type
 
-
-class ApiKeys:
-    def __init__(self):
-        self.API2_KEYS: list = Config.API_KEYS
-        self.api_2 = 0
-
-    # Rotating Key function to avoid hitting limit on single Key
-    def get_key(self, func: str) -> str:
-        keys = self.API2_KEYS
-        count = getattr(self, func) + 1
-        if count >= len(keys):
-            count = 0
-        setattr(self, func, count)
-        return keys[count]
-
-    # def switch(self) -> int:
-    #     self.switch_val += 1
-    #     if self.switch_val >= 3:
-    #         self.switch_val = 0
-    #     return self.switch_val
-
-
-api_keys: ApiKeys = ApiKeys()
+# class ApiKeys:
+#     def __init__(self):
+#         self.API2_KEYS: list = Config.API_KEYS
+#         self.api_2 = 0
+#
+#     # Rotating Key function to avoid hitting limit on single Key
+#     def get_key(self, func: str) -> str:
+#         keys = self.API2_KEYS
+#         count = getattr(self, func) + 1
+#         if count >= len(keys):
+#             count = 0
+#         setattr(self, func, count)
+#         return keys[count]
+#
+#      def switch(self) -> int:
+#          self.switch_val += 1
+#          if self.switch_val >= 3:
+#              self.switch_val = 0
+#          return self.switch_val
+#
+#
+# api_keys: ApiKeys = ApiKeys()
 
 
 class Instagram(ScraperConfig):
@@ -36,7 +35,6 @@ class Instagram(ScraperConfig):
         self.APIS = (
             "check_dump",
             "no_api_dl",
-            "api_2",
         )
 
         super().__init__(url=url)
@@ -72,29 +70,29 @@ class Instagram(ScraperConfig):
             return
         return await self.parse_ghraphql(response["data"]["shortcode_media"])
 
-    async def api_2(self) -> bool | None:
-        if not Config.API_KEYS:
-            return
-        # "/?__a=1&__d=1"
-        response: dict | None = await aio.get_json(
-            url="https://api.webscraping.ai/html",
-            timeout=30,
-            params={
-                "api_key": api_keys.get_key("api_2"),
-                "url": self.api_url,
-                "proxy": "residential",
-                "js": "false",
-            },
-        )
-        if (
-            not response
-            or "data" not in response.keys()
-            or not response["data"]["shortcode_media"]
-        ):
-            LOGGER.error(response)
-            return
-        self.caption = ".."
-        return await self.parse_ghraphql(response["data"]["shortcode_media"])
+    # async def api_2(self) -> bool | None:
+    #     if not Config.API_KEYS:
+    #         return
+    #     # "/?__a=1&__d=1"
+    #     response: dict | None = await aio.get_json(
+    #         url="https://api.webscraping.ai/html",
+    #         timeout=30,
+    #         params={
+    #             "api_key": api_keys.get_key("api_2"),
+    #             "url": self.api_url,
+    #             "proxy": "residential",
+    #             "js": "false",
+    #         },
+    #     )
+    #     if (
+    #         not response
+    #         or "data" not in response.keys()
+    #         or not response["data"]["shortcode_media"]
+    #     ):
+    #         LOGGER.error(response)
+    #         return
+    #     self.caption = ".."
+    #     return await self.parse_ghraphql(response["data"]["shortcode_media"])
 
     async def parse_ghraphql(self, json_: dict) -> str | list | None:
         type_check: str | None = json_.get("__typename", None)
